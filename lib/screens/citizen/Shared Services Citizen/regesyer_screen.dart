@@ -334,153 +334,245 @@ class _RegesyerScreenState extends State<RegesyerScreen>
       },
     );
   }
+Future<bool> _createAccount() async {
+  try {
+    print('بدء إنشاء الحساب...');
 
-  Future<bool> _createAccount() async {
-    try {
-      print('بدء إنشاء الحساب...');
+    final email = _accountController.text.trim();
+    final password = _codeController.text.trim();
+    final fullName = _fullNameController.text.trim();
+    final idNumber = _idNumberController.text.trim();
+    final houseNumber = _houseNumberController.text.trim();
+    final location = _locationController.text.trim();
+    final phone = _phoneController.text.trim();
 
-      final email = _accountController.text.trim();
-      final password = _codeController.text.trim();
-      final fullName = _fullNameController.text.trim();
-      final idNumber = _idNumberController.text.trim();
-      final houseNumber = _houseNumberController.text.trim();
-      final location = _locationController.text.trim();
-      final phone = _phoneController.text.trim();
-
-      if (phone.isEmpty) {
-        _showError('الرجاء إدخال رقم الموبايل');
-        return false;
-      }
-      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
-        _showError('البريد الإلكتروني غير صحيح');
-        return false;
-      }
-
-      if (password.length < 6) {
-        _showError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-        return false;
-      }
-
-      if (location.isEmpty) {
-        _showError('الرجاء اختيار المنطقة');
-        return false;
-      }
-
-      final AuthResponse authResponse = await Supabase.instance.client.auth
-          .signUp(email: email, password: password);
-
-      final user = authResponse.user;
-      if (user == null) {
-        _showError('فشل في إنشاء المستخدم');
-        return false;
-      }
-
-      await Future.delayed(Duration(milliseconds: 500));
-
-      String frontImageUrl = '';
-      String backImageUrl = '';
-      String selfieImageUrl = '';
-
-      if (_frontIdentityImage != null) {
-        try {
-          frontImageUrl = await _uploadImageToSupabase(
-            _frontIdentityImage!,
-            'front',
-            user.id,
-          );
-        } catch (e) {
-          print('خطأ في رفع الصورة الأمامية: $e');
-          return false;
-        }
-      }
-
-      if (_backIdentityImage != null) {
-        try {
-          backImageUrl = await _uploadImageToSupabase(
-            _backIdentityImage!,
-            'back',
-            user.id,
-          );
-        } catch (e) {
-          print('خطأ في رفع الصورة الخلفية: $e');
-          return false;
-        }
-      }
-
-      if (_selfieImage != null) {
-        try {
-          selfieImageUrl = await _uploadImageToSupabase(
-            _selfieImage!,
-            'selfie',
-            user.id,
-          );
-        } catch (e) {
-          print('خطأ في رفع صورة السيلفي: $e');
-          return false;
-        }
-      }
-
-      final insertData = {
-        'id': user.id,
-        'full_name': fullName,
-        'id_number': idNumber,
-        'email': email,
-        'phone': phone,
-        'house_number': houseNumber,
-        'location': location,
-        'front_id_image': frontImageUrl,
-        'back_id_image': backImageUrl,
-        'selfie_image': selfieImageUrl,
-        'user_type': 'citizen',
-        'status': 'under_review',
-        'created_at': DateTime.now().toIso8601String(),
-      };
-
-      await Supabase.instance.client.from('profiles').insert(insertData);
-
-      _navigateToNextScreen();
-      return true;
-    } catch (e) {
-      print('خطأ عام: $e');
-      _showError('حدث خطأ: $e');
+    // التحقق من الحقول
+    if (phone.isEmpty) {
+      _showError('الرجاء إدخال رقم الموبايل');
       return false;
     }
-  }
-
-  Future<String> _uploadImageToSupabase(
-    File image,
-    String fileType,
-    String userId,
-  ) async {
-    try {
-      final supabaseAdmin = SupabaseClient(
-        'https://xuwxgjiewdlzzpgzvpxb.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1d3hnamlld2RsenpwZ3p2cHhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4Mzc5MTIsImV4cCI6MjA3MjQxMzkxMn0.i1CD1NxOM7XDoViqSmyb4ECT7uKZFJPFbzjorscInRY',
-      );
-
-      final String fileName =
-          '$userId/${DateTime.now().millisecondsSinceEpoch}_$fileType.jpg';
-      final bytes = await image.readAsBytes();
-
-      await supabaseAdmin.storage
-          .from('employee_documents')
-          .uploadBinary(
-            fileName,
-            bytes,
-            fileOptions: FileOptions(contentType: 'image/jpeg', upsert: false),
-          );
-
-      final String publicUrl = supabaseAdmin.storage
-          .from('employee_documents')
-          .getPublicUrl(fileName);
-
-      await supabaseAdmin.dispose();
-
-      return publicUrl;
-    } catch (e) {
-      throw Exception('فشل في رفع الصورة: $e');
+    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
+      _showError('البريد الإلكتروني غير صحيح');
+      return false;
     }
+
+    if (password.length < 6) {
+      _showError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      return false;
+    }
+
+    if (location.isEmpty) {
+      _showError('الرجاء اختيار المنطقة');
+      return false;
+    }
+
+    // التحقق من عدم وجود البريد الإلكتروني في جدول profiles داخل schema shared
+    try {
+      final existingProfile = await Supabase.instance.client
+          .schema('shared')  // تحديد schema
+          .from('profiles')
+          .select('email')
+          .eq('email', email)
+          .maybeSingle();
+      
+      if (existingProfile != null) {
+        _showError('البريد الإلكتروني مستخدم بالفعل');
+        return false;
+      }
+    } catch (e) {
+      print('خطأ في التحقق من البريد الإلكتروني: $e');
+      // إذا كان الخطأ بسبب عدم وجود الجدول، نكمل على أي حال
+    }
+
+    // التحقق من عدم وجود رقم الهوية
+    try {
+      final existingId = await Supabase.instance.client
+          .schema('shared')  // تحديد schema
+          .from('profiles')
+          .select('id_number')
+          .eq('id_number', idNumber)
+          .maybeSingle();
+      
+      if (existingId != null) {
+        _showError('رقم الهوية مستخدم بالفعل');
+        return false;
+      }
+    } catch (e) {
+      print('خطأ في التحقق من رقم الهوية: $e');
+    }
+
+    // 1. تسجيل الخروج أولاً للتأكد من عدم وجود مستخدم مسجل
+    await Supabase.instance.client.auth.signOut();
+
+    // 2. إنشاء المستخدم في auth
+    late AuthResponse authResponse;
+    try {
+      authResponse = await Supabase.instance.client.auth
+          .signUp(email: email, password: password);
+    } on AuthException catch (e) {
+      if (e.message.contains('User already registered')) {
+        _showError('البريد الإلكتروني مسجل بالفعل. الرجاء استخدام بريد آخر أو تسجيل الدخول');
+        return false;
+      } else {
+        _showError('خطأ في إنشاء الحساب: ${e.message}');
+        return false;
+      }
+    }
+
+    final user = authResponse.user;
+    if (user == null) {
+      _showError('فشل في إنشاء المستخدم');
+      return false;
+    }
+
+    // انتظار قليل للتأكد من إنشاء المستخدم
+    await Future.delayed(Duration(milliseconds: 1000));
+
+    // 3. رفع الصور إذا وجدت
+    String frontImageUrl = '';
+    String backImageUrl = '';
+    String selfieImageUrl = '';
+
+    if (_frontIdentityImage != null) {
+      try {
+        frontImageUrl = await _uploadImageToSupabase(
+          _frontIdentityImage!,
+          'front',
+          user.id,
+        );
+      } catch (e) {
+        print('خطأ في رفع الصورة الأمامية: $e');
+      }
+    }
+
+    if (_backIdentityImage != null) {
+      try {
+        backImageUrl = await _uploadImageToSupabase(
+          _backIdentityImage!,
+          'back',
+          user.id,
+        );
+      } catch (e) {
+        print('خطأ في رفع الصورة الخلفية: $e');
+      }
+    }
+
+    if (_selfieImage != null) {
+      try {
+        selfieImageUrl = await _uploadImageToSupabase(
+          _selfieImage!,
+          'selfie',
+          user.id,
+        );
+      } catch (e) {
+        print('خطأ في رفع صورة السيلفي: $e');
+      }
+    }
+
+    // 4. إدراج بيانات المستخدم في جدول profiles داخل schema shared
+ // 4. إدراج بيانات المستخدم في جدول profiles داخل schema shared
+// 4. إدراج بيانات المستخدم في جدول profiles داخل schema shared
+final insertData = {
+  'id': user.id,
+  'full_name': fullName,
+  'id_number': idNumber,
+  'email': email,
+  'phone': phone,
+  'house_number': houseNumber,
+  'location': location,
+  'front_id_image': frontImageUrl,
+  'back_id_image': backImageUrl,
+  'selfie_image': selfieImageUrl,
+  'user_type': 'citizen',
+  'status': 'under_review',
+  'created_at': DateTime.now().toIso8601String(),
+};
+
+try {
+  await Supabase.instance.client
+      .schema('shared')  // تحديد schema
+      .from('profiles')
+      .insert(insertData);
+      
+  print('تم إدراج البيانات بنجاح');
+} catch (e) {
+  print('خطأ في إدراج البيانات: $e');
+  
+  // محاولة إنشاء الجدول إذا لم يكن موجوداً (اختياري)
+  
+  
+  // محاولة إدراج البيانات مرة أخرى
+  try {
+    await Supabase.instance.client
+        .schema('shared')
+        .from('profiles')
+        .insert(insertData);
+    print('تم إدراج البيانات بعد المحاولة الثانية');
+  } catch (retryError) {
+    print('فشل في إدراج البيانات بعد المحاولة الثانية: $retryError');
+    _showError('فشل في حفظ البيانات. الرجاء المحاولة مرة أخرى');
+    return false;
   }
+}
+
+// 5. تسجيل الخروج بعد إنشاء الحساب
+await Supabase.instance.client.auth.signOut();
+
+// 6. عرض رسالة نجاح والتوجيه لشاشة تسجيل الدخول
+if (mounted) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        'تم إنشاء الحساب بنجاح. يرجى تسجيل الدخول للمتابعة',
+        style: TextStyle(fontFamily: 'Tajawal'),
+      ),
+      backgroundColor: _successColor,
+      duration: Duration(seconds: 3),
+    ),
+  );
+  
+  // العودة لشاشة تسجيل الدخول
+  Navigator.pushReplacementNamed(context, SigninScreen.screenroot);
+}
+
+return true;
+  } catch (e) {
+    print('خطأ عام: $e');
+    _showError('حدث خطأ: ${e.toString()}');
+    return false;
+  }
+}
+
+ Future<String> _uploadImageToSupabase(
+  File image,
+  String fileType,
+  String userId,
+) async {
+  try {
+    // استخدام نفس اتصال Supabase مع تحديد bucket
+    final String fileName =
+        '$userId/${DateTime.now().millisecondsSinceEpoch}_$fileType.jpg';
+    final bytes = await image.readAsBytes();
+
+    // رفع الصورة إلى bucket
+    await Supabase.instance.client.storage
+        .from('employee_documents')
+        .uploadBinary(
+          fileName,
+          bytes,
+          fileOptions: FileOptions(contentType: 'image/jpeg', upsert: true),
+        );
+
+    // الحصول على الرابط العام
+    final String publicUrl = Supabase.instance.client.storage
+        .from('employee_documents')
+        .getPublicUrl(fileName);
+
+    return publicUrl;
+  } catch (e) {
+    throw Exception('فشل في رفع الصورة: $e');
+  }
+}
 
   void _navigateToNextScreen() {
     if (mounted) {

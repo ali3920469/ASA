@@ -20,13 +20,13 @@ import '../Water/water_problem_report_screen.dart';
 import '../Electricity/electricity_problem_report_screen.dart';
 import '../Waste/waste_problem_report_screen.dart';
 // استيراد ملفات الطوارئ الجديدة
-import '../service_delete/water_emergency_screen.dart';
+import '../../service_delete_citizen/water_emergency_screen.dart';
 import '../Electricity/electricity_emergency_screen.dart';
-import '../service_delete/waste_emergency_screen.dart';
+import '../../service_delete_citizen/waste_emergency_screen.dart';
 // استيراد الملفات الجديدة:
-import '../service_delete/electricity_paid_services.dart';
-import '../service_delete/water_paid_services.dart';
-import '../service_delete/waste_paid_services.dart';
+import '../../service_delete_citizen/electricity_paid_services.dart';
+import '../../service_delete_citizen/water_paid_services.dart';
+import '../../service_delete_citizen/waste_paid_services.dart';
 
 class UserMainScreen extends StatefulWidget {
   static const String screenRoot = 'user_main';
@@ -109,27 +109,38 @@ class _UserMainScreenState extends State<UserMainScreen>
         return;
       }
 
-      // جلب بيانات المستخدم من جدول profiles
-      final userData = await Supabase.instance.client
-          .from('profiles')
-          .select()
-          .eq('id', user.id)
-          .single();
-
-      // في دالة _checkUserStatus()
+      // تجاهل جلب البيانات من قاعدة البيانات، واستخدم بيانات المستخدم من Supabase Auth فقط
       setState(() {
-        _userProfile = userData;
-        _isAccountApproved = true; // جعل جميع الحسابات معتمدة تلقائياً
+        _userProfile = {
+          'id': user.id,
+          'email': user.email,
+          'full_name': user.userMetadata?['full_name'] ?? 'مستخدم',
+          // يمكنك إضافة أي بيانات أخرى متوفرة في userMetadata
+        };
+        _isAccountApproved = true;
         _isLoading = false;
       });
     } catch (e) {
       print('Error checking user status: $e');
-      // إذا حدث خطأ، ارجع إلى شاشة تسجيل الدخول
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        SigninScreen.screenroot,
-        (route) => false,
-      );
+      // في حالة الخطأ، استخدم بيانات المستخدم من Auth فقط
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        setState(() {
+          _userProfile = {
+            'id': user.id,
+            'email': user.email,
+            'full_name': 'مستخدم',
+          };
+          _isAccountApproved = true;
+          _isLoading = false;
+        });
+      } else {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          SigninScreen.screenroot,
+          (route) => false,
+        );
+      }
     }
   }
 
@@ -223,7 +234,7 @@ class _UserMainScreenState extends State<UserMainScreen>
         {'name': 'الإبلاغ عن مشكلة', 'icon': 'problem', 'premium': false},
         {'name': 'معلومات الفواتير', 'icon': 'tax', 'premium': false},
         {'name': 'الهدايا والعروض', 'icon': 'offers', 'premium': false},
-      /*
+        /*
         {'name': 'خدمات مميزة', 'icon': 'premium', 'premium': true},
         */
       ],
@@ -244,7 +255,7 @@ class _UserMainScreenState extends State<UserMainScreen>
         {'name': 'الإبلاغ عن مشكلة', 'icon': 'problem', 'premium': false},
         {'name': 'معلومات الفواتير', 'icon': 'tax', 'premium': false},
         {'name': 'الهدايا والعروض', 'icon': 'offers', 'premium': false},
-      /*
+        /*
 
         {'name': 'خدمات مميزة', 'icon': 'premium', 'premium': true},
       */
@@ -267,7 +278,7 @@ class _UserMainScreenState extends State<UserMainScreen>
         {'name': 'الإبلاغ عن مشكلة', 'icon': 'problem', 'premium': false},
         {'name': 'معلومات الفواتير', 'icon': 'tax', 'premium': false},
         {'name': 'الهدايا والعروض', 'icon': 'offers', 'premium': false},
-   /*
+        /*
 
         {'name': 'خدمات مميزة', 'icon': 'premium', 'premium': true},
    */
@@ -1203,7 +1214,7 @@ class _UserMainScreenState extends State<UserMainScreen>
           ),
         );
       }
-    } 
+    }
     /*
     else if (serviceName.contains('أمر طارئ')) {
       // توجيه إلى شاشة الطوارئ الجديدة حسب نوع الخدمة

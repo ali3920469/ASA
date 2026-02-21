@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../Shared Services Citizen/payment_screen.dart';
+import '../citizen/Shared Services Citizen/payment_screen.dart';
 import 'dart:async';
-import '../Shared Services Citizen/employee_selection_screen.dart';
-import '../Shared Services Citizen/payment_process_screen.dart';
+import 'employee_selection_screen.dart';
+import '../citizen/Shared Services Citizen/payment_process_screen.dart';
 import 'package:intl/intl.dart'; // أضف هذا السطر
 
 class WastePaidServices extends PaidServicesScreen {

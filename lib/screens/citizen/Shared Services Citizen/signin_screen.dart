@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mang_mu/screens/citizen/Shared%20Services%20Citizen/regesyer_screen.dart';
 import 'dart:ui'; // تغيير الاستيراد ليكون باسم ui
+import 'package:mang_mu/screens/citizen/Shared Services Citizen/user_main_screen.dart';
 
 class SigninScreen extends StatefulWidget {
   static const String screenroot = 'signin_screen';
@@ -81,55 +82,74 @@ class _SigninScreenState extends State<SigninScreen>
   }
 
   // دالة تسجيل الدخول
+  // دالة تسجيل الدخول
+  // دالة تسجيل الدخول
   void _signIn() {
-  if (_formKey.currentState!.validate()) {
-    _performSignIn();
+    if (_formKey.currentState!.validate()) {
+      _performSignIn();
+    }
+  }
+
+  Future<void> _performSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
+      final AuthResponse response = await Supabase.instance.client.auth
+          .signInWithPassword(email: email, password: password);
+
+ if (response.user != null && mounted) {
+  // التحقق من وجود المستخدم في جدول profiles داخل schema shared
+  final profileResponse = await Supabase.instance.client
+      .schema('shared')  // أضف هذا السطر
+      .from('profiles')
+      .select()
+      .eq('id', response.user!.id)
+      .maybeSingle();
+
+  if (profileResponse != null) {
+    // المستخدم موجود في قاعدة البيانات
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const UserMainScreen()),
+    );
+  } else {
+    // المستخدم غير موجود في قاعدة البيانات - تسجيل خروج
+    await Supabase.instance.client.auth.signOut();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'هذا الحساب غير مسجل في النظام. يرجى إنشاء حساب جديد',
+          style: const TextStyle(fontFamily: 'Tajawal'),
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 }
-
-Future<void> _performSignIn() async {
-  setState(() => _isLoading = true);
-
-  try {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    final AuthResponse response = await Supabase.instance.client.auth
-        .signInWithPassword(email: email, password: password);
-
-    if (response.user != null) {
-      // التحقق من حالة الحساب في جدول profiles فقط
-      final userData = await Supabase.instance.client
-          .from('profiles')
-          .select('status')
-          .eq('id', response.user!.id)
-          .single();
-
-      // إذا وصل إلى هنا، يعني الحساب مفعل ويمكن الانتقال للشاشة الرئيسية
+    } on AuthException catch (e) {
+      _handleAuthError(e);
+    } catch (e) {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, 'user_main');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'حدث خطأ أثناء تسجيل الدخول: ${e.toString()}',
+              style: const TextStyle(fontFamily: 'Tajawal'),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
-  } on AuthException catch (e) {
-    _handleAuthError(e);
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'حدث خطأ أثناء تسجيل الدخول: ${e.toString()}',
-            style: const TextStyle(fontFamily: 'Tajawal'),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  } finally {
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
   }
-}
 
   void _handleAuthError(AuthException e) {
     String errorMessage = 'حدث خطأ أثناء تسجيل الدخول';
@@ -549,20 +569,25 @@ Future<void> _performSignIn() async {
                                     const SizedBox(height: 1),
 
                                     // زر تسجيل الدخول
-                              // زر تسجيل الدخول
-_buildEnhancedAuthButton(
-  context,
-  icon: _isLoading ? Icons.hourglass_empty : Icons.security,
-  label: _isLoading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول',
-  gradient: LinearGradient(
-    colors: [
-      _buttonGradientStart,
-      _buttonGradientEnd,
-    ],
-  ),
-onPressed: _isLoading 
-    ? () {} // دالة فارغة بدلاً من null
-    : _signIn,),
+                                    // زر تسجيل الدخول
+                                    _buildEnhancedAuthButton(
+                                      context,
+                                      icon: _isLoading
+                                          ? Icons.hourglass_empty
+                                          : Icons.security,
+                                      label: _isLoading
+                                          ? 'جاري تسجيل الدخول...'
+                                          : 'تسجيل الدخول',
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          _buttonGradientStart,
+                                          _buttonGradientEnd,
+                                        ],
+                                      ),
+                                      onPressed: _isLoading
+                                          ? () {} // دالة فارغة بدلاً من null
+                                          : _signIn,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -588,20 +613,23 @@ onPressed: _isLoading
                                       : Colors.grey[700],
                                 ),
                               ),
-TextButton(
-  onPressed: () {
-    // الانتقال لشاشة إنشاء حساب جديد
-    Navigator.pushNamed(context, RegesyerScreen.screenRoot);
-  },
-  child: Text(
-    'إنشاء حساب',
-    style: TextStyle(
-      color: _buttonGradientStart,
-      fontFamily: 'Tajawal',
-      fontWeight: FontWeight.bold,
-    ),
-  ),
-),
+                              TextButton(
+                                onPressed: () {
+                                  // الانتقال لشاشة إنشاء حساب جديد
+                                  Navigator.pushNamed(
+                                    context,
+                                    RegesyerScreen.screenRoot,
+                                  );
+                                },
+                                child: Text(
+                                  'إنشاء حساب',
+                                  style: TextStyle(
+                                    color: _buttonGradientStart,
+                                    fontFamily: 'Tajawal',
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -612,8 +640,6 @@ TextButton(
               ),
             ),
           ),
-
-         
 
           // مؤشر التحميل
           if (_isLoading)

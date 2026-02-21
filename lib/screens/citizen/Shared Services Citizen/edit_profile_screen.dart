@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> userProfile;
@@ -36,12 +36,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _isUploadingImage = false;
   String? _errorMessage;
   File? _newSelfieImage;
-  String? _newSelfieUrl; // هذا المتغير يحتاج معالجة خاصة
+  String? _newSelfieUrl;
 
   @override
   void initState() {
     super.initState();
-    // تهيئة الحقول بقيم المستخدم الحالية
+    _initializeControllers();
+  }
+
+  void _initializeControllers() {
     _fullNameController = TextEditingController(
       text: widget.userProfile['full_name'] ?? '',
     );
@@ -73,7 +76,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  // دالة لالتقاط سيلفي جديد باستخدام الكاميرا
+  // دالة لالتقاط سيلفي جديد
   Future<void> _takeNewSelfie() async {
     try {
       final imagePicker = ImagePicker();
@@ -90,7 +93,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _isUploadingImage = true;
         });
 
-        // رفع الصورة تلقائياً إلى Supabase
         await _uploadSelfieToSupabase();
       }
     } catch (e) {
@@ -106,24 +108,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (_newSelfieImage == null) return;
 
     try {
-      final supabaseService = SupabaseService();
-      final imageUrl = await supabaseService.uploadSelfie(_newSelfieImage!.path);
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw Exception('المستخدم غير مسجل الدخول');
 
-      if (imageUrl != null) {
-        setState(() {
-          _newSelfieUrl = imageUrl;
-        });
+      final String fileName =
+          '${user.id}/selfie_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final bytes = await _newSelfieImage!.readAsBytes();
 
-        // عرض رسالة نجاح
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('تم حفظ صورة السيلفي بنجاح'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
+      // رفع الصورة
+      await Supabase.instance.client.storage
+          .from('employee_documents')
+          .uploadBinary(
+            fileName,
+            bytes,
+            fileOptions: FileOptions(contentType: 'image/jpeg', upsert: true),
           );
-        }
+
+      // الحصول على الرابط العام
+      final String publicUrl = Supabase.instance.client.storage
+          .from('employee_documents')
+          .getPublicUrl(fileName);
+
+      setState(() {
+        _newSelfieUrl = publicUrl;
+      });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم رفع صورة السيلفي بنجاح'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
       setState(() {
@@ -136,95 +153,92 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  // دالة حفظ البيانات - مصححة
+  // دالة حفظ البيانات
   Future<void> _saveProfile() async {
-  if (!_formKey.currentState!.validate()) {
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-    _errorMessage = null;
-  });
-
-  try {
-    // تجهيز البيانات للتحديث
-    final updatedData = {
-      'full_name': _fullNameController.text.trim(),
-      'email': _emailController.text.trim(),
-      'phone': _phoneController.text.trim(),
-      'id_number': _idNumberController.text.trim(),
-      'house_number': _houseNumberController.text.trim(),
-      'location': _locationController.text.trim(),
-      'updated_at': DateTime.now().toIso8601String(),
-    };
-
-    // ✅ التصحيح: استخدام متغير محلي للتحقق من null
-    final currentSelfieUrl = _newSelfieUrl;
-    if (currentSelfieUrl != null && currentSelfieUrl.isNotEmpty) {
-      updatedData['selfie_image'] = currentSelfieUrl;
+    if (!_formKey.currentState!.validate()) {
+      return;
     }
 
-    // استدعاء Supabase لتحديث البيانات
-    final supabaseService = SupabaseService();
-    final response = await supabaseService.updateUserProfile(updatedData);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    if (response['success'] == true) {
-      // ✅ التصحيح: تحويل Map<dynamic, dynamic> إلى Map<String, dynamic>
-      final Map<String, dynamic> responseData = Map<String, dynamic>.from(response['data'] ?? {});
-      
-      // دمج البيانات الجديدة مع القديمة
-      final Map<String, dynamic> newProfile = {
-        ...widget.userProfile,
-        ...updatedData,
-        ...responseData, // ✅ الآن من النوع الصحيح
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw Exception('المستخدم غير مسجل الدخول');
+
+      // تجهيز البيانات للتحديث
+      final updatedData = {
+        'full_name': _fullNameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'id_number': _idNumberController.text.trim(),
+        'house_number': _houseNumberController.text.trim(),
+        'location': _locationController.text.trim(),
+        'updated_at': DateTime.now().toIso8601String(),
       };
 
-      // إعادة البيانات المحدثة
-      widget.onProfileUpdated(newProfile);
+      // إضافة صورة السيلفي إذا تم رفع صورة جديدة
+      if (_newSelfieUrl != null && _newSelfieUrl!.isNotEmpty) {
+        updatedData['selfie_image'] = _newSelfieUrl!;
+      }
 
-      // العودة للشاشة السابقة
+      // تحديث البيانات في Supabase (shared schema)
+      await Supabase.instance.client
+          .schema('shared')
+          .from('profiles')
+          .update(updatedData)
+          .eq('id', user.id);
+
+      // جلب البيانات المحدثة
+      final updatedProfile = await Supabase.instance.client
+          .schema('shared')
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .single();
+
+      // إرسال البيانات المحدثة إلى الشاشة السابقة
+      widget.onProfileUpdated(updatedProfile);
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'تم تحديث الملف الشخصي بنجاح'),
+          const SnackBar(
+            content: Text('تم تحديث الملف الشخصي بنجاح'),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
         Navigator.pop(context);
       }
-    } else {
-      throw Exception(response['message'] ?? 'فشل تحديث البيانات');
-    }
-  } catch (e) {
-    setState(() {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
-    });
-    
-    // عرض رسالة الخطأ
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_errorMessage!),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  } finally {
-    if (mounted) {
+    } catch (e) {
       setState(() {
-        _isLoading = false;
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_errorMessage!),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
-}
 
-  // ودجة عرض صورة السيلفي
+  // دالة عرض صورة السيلفي
   Widget _buildSelfieSection() {
     final currentSelfie = widget.userProfile['selfie_image'];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -237,7 +251,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        
+
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -253,10 +267,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 height: 120,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(60),
-                  border: Border.all(
-                    color: widget.primaryColor,
-                    width: 3,
-                  ),
+                  border: Border.all(color: widget.primaryColor, width: 3),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(57),
@@ -267,40 +278,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                         )
                       : _newSelfieImage != null
-                          ? Image.file(_newSelfieImage!, fit: BoxFit.cover)
-                          : currentSelfie != null && currentSelfie.toString().isNotEmpty
-                              ? Image.network(
-                                  currentSelfie.toString(),
-                                  fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded /
-                                                  loadingProgress.expectedTotalBytes!
-                                            : null,
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Icon(
-                                      Icons.person,
-                                      size: 50,
-                                      color: widget.primaryColor,
-                                    );
-                                  },
-                                )
-                              : Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: widget.primaryColor,
-                                ),
+                      ? Image.file(_newSelfieImage!, fit: BoxFit.cover)
+                      : currentSelfie != null &&
+                            currentSelfie.toString().isNotEmpty
+                      ? Image.network(
+                          currentSelfie.toString(),
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.person,
+                              size: 50,
+                              color: widget.primaryColor,
+                            );
+                          },
+                        )
+                      : Icon(
+                          Icons.person,
+                          size: 50,
+                          color: widget.primaryColor,
+                        ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // زر التقاط سيلفي جديد
               SizedBox(
                 width: double.infinity,
@@ -323,9 +336,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       : const Text('التقاط سيلفي جديد'),
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               Text(
                 _newSelfieImage != null
                     ? '✅ صورة جديدة جاهزة للحفظ'
@@ -340,7 +353,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 20),
       ],
     );
@@ -353,6 +366,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required String? Function(String?) validator,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -360,6 +374,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
+        readOnly: readOnly,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(color: widget.textSecondaryColor),
@@ -376,8 +391,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide(color: Colors.grey.withOpacity(0.5)),
           ),
+          filled: readOnly,
+          fillColor: readOnly ? Colors.grey[100] : null,
         ),
-        style: TextStyle(color: widget.textColor, fontSize: 14),
+        style: TextStyle(
+          color: readOnly ? Colors.grey[600] : widget.textColor,
+          fontSize: 14,
+        ),
         validator: validator,
       ),
     );
@@ -431,10 +451,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.red, fontSize: 14),
                         ),
                       ),
                     ],
@@ -511,6 +528,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   return null;
                 },
                 keyboardType: TextInputType.number,
+                readOnly: true, // رقم الهوية غير قابل للتعديل
               ),
 
               _buildTextField(
@@ -546,7 +564,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: (_isLoading || _isUploadingImage) ? null : _saveProfile,
+                  onPressed: (_isLoading || _isUploadingImage)
+                      ? null
+                      : _saveProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: widget.primaryColor,
                     foregroundColor: Colors.white,
@@ -593,7 +613,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
             ],
           ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../citizen/Shared Services Citizen/welcome_screen.dart';
-import 'package:mang_mu/screens/employee/Shared%20Services/ewecome_screen.dart';
+import 'package:mang_mu/screens/employee/Employee_Shared%20Services/ewecome_screen.dart';
 import 'dart:ui';
 import 'dart:math';
 

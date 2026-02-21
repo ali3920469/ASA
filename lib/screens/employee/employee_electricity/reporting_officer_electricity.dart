@@ -5,20 +5,24 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import 'dart:typed_data';
+import 'dart:io'; // ← أضف هذا السطر
 import 'package:provider/provider.dart';
 import 'package:mang_mu/providers/theme_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
-import 'package:mang_mu/screens/employee/Shared Services/esignin_screen.dart';
+import 'package:mang_mu/screens/employee/Employee_Shared%20Services/esignin_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class ReportingOfficerElectricityScreen extends StatefulWidget {
   @override
-  _ReportingOfficerElectricityScreenState createState() => _ReportingOfficerElectricityScreenState();
+  _ReportingOfficerElectricityScreenState createState() =>
+      _ReportingOfficerElectricityScreenState();
 }
 
-class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElectricityScreen> 
+class _ReportingOfficerElectricityScreenState
+    extends State<ReportingOfficerElectricityScreen>
     with TickerProviderStateMixin {
-  
   late TabController _mainTabController;
   late TabController _electricityTabController;
   late TabController _employeeTabController;
@@ -53,79 +57,99 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
   String? _selectedWeek;
   String? _selectedMonth;
   final List<String> _reportTypes = ['يومي', 'أسبوعي', 'شهري'];
-  final List<String> _weeks = ['الأسبوع الأول', 'الأسبوع الثاني', 'الأسبوع الثالث', 'الأسبوع الرابع'];
-  final List<String> _months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-  
+  final List<String> _weeks = [
+    'الأسبوع الأول',
+    'الأسبوع الثاني',
+    'الأسبوع الثالث',
+    'الأسبوع الرابع',
+  ];
+  final List<String> _months = [
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
+  ];
+
   // متغيرات التصفية والتبويبات الفرعية
   Map<String, String> _subTabStatus = {
-  'electricity': 'غير مقروءة',
-  'employee': 'غير مقروءة',
-  'app': 'غير مقروءة',
-  'emergency': 'غير مقروءة', // أضف هذا
-};
+    'electricity': 'غير مقروءة',
+    'employee': 'غير مقروءة',
+    'app': 'غير مقروءة',
+    'emergency': 'غير مقروءة', // أضف هذا
+  };
   // متغيرات التصفية
   String _filterStatus = 'جميع الحالات';
   String _filterPriority = 'جميع الأولويات';
   String _filterArea = 'جميع المناطق';
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
-  
+
   List<EmergencyReport> _emergencyReports = [
-  EmergencyReport(
-    customerName: 'علي حميد',
-    location: 'حي الصحة - شارع المستشفى',
-    area: 'حي الصحة',
-    emergencyType: 'حادث كهربائي',
-    accidentLocation: 'أمام المستشفى العام',
-    date: '2024-01-26',
-    time: '10:15 ص',
-    description: 'حادث انفجار محول كهربائي أمام المستشفى العام، يوجد مصابين.',
-    imageAsset: 'assets/emergency1.jpg',
-    status: 'لم يتم المعالجة',
-    isRead: false,
-    reportedDate: DateTime.now().subtract(Duration(minutes: 30)),
-    severity: 'حرجة',
-    injuredCount: 2,
-    firePresent: true,
-    roadClosed: true,
-  ),
-  EmergencyReport(
-    customerName: 'سعاد أحمد',
-    location: 'حي الأندلس - شارع المدارس',
-    area: 'حي الأندلس',
-    emergencyType: 'حادث سير مع عمود كهرباء',
-    accidentLocation: 'تقاطع شارع المدارس مع شارع الرياض',
-    date: '2024-01-26',
-    time: '09:45 ص',
-    description: 'تصادم سيارة مع عمود إنارة كهربائي، العمود مائل ويشكل خطراً.',
-    imageAsset: 'assets/emergency2.jpg',
-    status: 'قيد المعالجة',
-    isRead: true,
-    reportedDate: DateTime.now().subtract(Duration(hours: 2)),
-    severity: 'عالية',
-    injuredCount: 1,
-    firePresent: false,
-    roadClosed: true,
-  ),
-  EmergencyReport(
-    customerName: 'مصطفى كريم',
-    location: 'حي القادسية - سوق الخضار',
-    area: 'حي القادسية',
-    emergencyType: 'حريق في لوحة توزيع',
-    accidentLocation: 'سوق الخضار المركزي - المحل رقم 45',
-    date: '2024-01-25',
-    time: '11:30 ص',
-    description: 'حريق في لوحة التوزيع الكهربائية بسوق الخضار، تم إخلاء المنطقة.',
-    imageAsset: 'assets/emergency3.jpg',
-    status: 'قيد المعالجة',
-    isRead: false,
-    reportedDate: DateTime.now().subtract(Duration(days: 1)),
-    severity: 'عالية',
-    injuredCount: 0,
-    firePresent: true,
-    roadClosed: false,
-  ),
-];
+    EmergencyReport(
+      customerName: 'علي حميد',
+      location: 'حي الصحة - شارع المستشفى',
+      area: 'حي الصحة',
+      emergencyType: 'حادث كهربائي',
+      accidentLocation: 'أمام المستشفى العام',
+      date: '2024-01-26',
+      time: '10:15 ص',
+      description: 'حادث انفجار محول كهربائي أمام المستشفى العام، يوجد مصابين.',
+      imageAsset: 'assets/emergency1.jpg',
+      status: 'لم يتم المعالجة',
+      isRead: false,
+      reportedDate: DateTime.now().subtract(Duration(minutes: 30)),
+      severity: 'حرجة',
+      injuredCount: 2,
+      firePresent: true,
+      roadClosed: true,
+    ),
+    EmergencyReport(
+      customerName: 'سعاد أحمد',
+      location: 'حي الأندلس - شارع المدارس',
+      area: 'حي الأندلس',
+      emergencyType: 'حادث سير مع عمود كهرباء',
+      accidentLocation: 'تقاطع شارع المدارس مع شارع الرياض',
+      date: '2024-01-26',
+      time: '09:45 ص',
+      description:
+          'تصادم سيارة مع عمود إنارة كهربائي، العمود مائل ويشكل خطراً.',
+      imageAsset: 'assets/emergency2.jpg',
+      status: 'قيد المعالجة',
+      isRead: true,
+      reportedDate: DateTime.now().subtract(Duration(hours: 2)),
+      severity: 'عالية',
+      injuredCount: 1,
+      firePresent: false,
+      roadClosed: true,
+    ),
+    EmergencyReport(
+      customerName: 'مصطفى كريم',
+      location: 'حي القادسية - سوق الخضار',
+      area: 'حي القادسية',
+      emergencyType: 'حريق في لوحة توزيع',
+      accidentLocation: 'سوق الخضار المركزي - المحل رقم 45',
+      date: '2024-01-25',
+      time: '11:30 ص',
+      description:
+          'حريق في لوحة التوزيع الكهربائية بسوق الخضار، تم إخلاء المنطقة.',
+      imageAsset: 'assets/emergency3.jpg',
+      status: 'قيد المعالجة',
+      isRead: false,
+      reportedDate: DateTime.now().subtract(Duration(days: 1)),
+      severity: 'عالية',
+      injuredCount: 0,
+      firePresent: true,
+      roadClosed: false,
+    ),
+  ];
   // بيانات التقارير
   final List<Map<String, dynamic>> reports = [
     {
@@ -151,7 +175,8 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
       date: '2024-01-15',
       time: '08:30 ص',
       duration: '3 ساعات',
-      description: 'انقطاع كامل للتيار الكهربائي عن المنطقة منذ الساعة 8:30 صباحاً. تم إبلاغ الفنيين والمتابعة جارية.',
+      description:
+          'انقطاع كامل للتيار الكهربائي عن المنطقة منذ الساعة 8:30 صباحاً. تم إبلاغ الفنيين والمتابعة جارية.',
       imageAsset: 'assets/outage1.jpg',
       status: 'قيد المعالجة',
       priority: 'عالي',
@@ -171,7 +196,8 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
       date: '2024-01-14',
       time: '02:00 م',
       duration: '2 ساعات',
-      description: 'انخفاض شديد في الجهد الكهربائي يؤثر على عمل الأجهزة الكهربائية.',
+      description:
+          'انخفاض شديد في الجهد الكهربائي يؤثر على عمل الأجهزة الكهربائية.',
       imageAsset: 'assets/voltage2.jpg',
       status: 'تم المعالجة',
       priority: 'متوسط',
@@ -211,7 +237,8 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
       location: 'شارع الملك فهد - مبنى رقم ١٢٣',
       date: '2024-01-25',
       time: '10:30 ص',
-      description: 'تأخر فني الكهرباء في الوصول لإصلاح العطل لمدة تتجاوز 3 ساعات مع عدم التواصل لتحديد موعد جديد.',
+      description:
+          'تأخر فني الكهرباء في الوصول لإصلاح العطل لمدة تتجاوز 3 ساعات مع عدم التواصل لتحديد موعد جديد.',
       imageAsset: 'assets/technical1.jpg',
       problemType: 'موظف الصيانة',
       status: 'لم يتم المعالجة',
@@ -227,7 +254,8 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
       location: 'شارع الأمير سلطان - بجوار المركز الصحي',
       date: '2024-01-24',
       time: '02:20 م',
-      description: 'موظف الفواتير لم يستجب لطلب تصحيح الخطأ في الفاتورة وتم تجاهل المكالمات الهاتفية المتكررة.',
+      description:
+          'موظف الفواتير لم يستجب لطلب تصحيح الخطأ في الفاتورة وتم تجاهل المكالمات الهاتفية المتكررة.',
       imageAsset: 'assets/billing2.jpg',
       problemType: 'موظف الفواتير',
       status: 'قيد المعالجة',
@@ -243,7 +271,8 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
       location: 'شارع الخزان - مقابل الحدائق',
       date: '2024-01-23',
       time: '11:15 ص',
-      description: 'موظف الاستقبال تعامل بطريقة غير لائقة مع العميل ورفض تقديم المعلومات المطلوبة.',
+      description:
+          'موظف الاستقبال تعامل بطريقة غير لائقة مع العميل ورفض تقديم المعلومات المطلوبة.',
       imageAsset: 'assets/employee1.jpg',
       problemType: 'أخرى',
       status: 'تم المعالجة',
@@ -262,7 +291,8 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
       location: 'شارع الملك فهد - مبنى رقم ١٢٣',
       date: '2024-01-25',
       time: '10:30 ص',
-      description: 'التطبيق يتعطل بشكل متكرر عند محاولة دفع الفاتورة، وعند إعادة التشغيل يفقد البيانات المدخلة.',
+      description:
+          'التطبيق يتعطل بشكل متكرر عند محاولة دفع الفاتورة، وعند إعادة التشغيل يفقد البيانات المدخلة.',
       imageAsset: 'assets/app_crash1.jpg',
       problemType: 'تعطل في التطبيق',
       status: 'لم يتم المعالجة',
@@ -277,7 +307,8 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
       location: 'شارع الملك فهد - مبنى رقم ١٢٣',
       date: '2024-01-25',
       time: '10:30 ص',
-      description: 'فشل في عملية الدفع عبر البطاقة الائتمانية مع ظهور رسالة خطأ غير واضحة.',
+      description:
+          'فشل في عملية الدفع عبر البطاقة الائتمانية مع ظهور رسالة خطأ غير واضحة.',
       imageAsset: 'assets/payment1.jpg',
       problemType: 'مشكلة في الدفع',
       status: 'لم يتم المعالجة',
@@ -292,7 +323,8 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
       location: 'شارع الأمير سلطان - بجوار المركز الصحي',
       date: '2024-01-22',
       time: '10:30 ص',
-      description: 'واجهة المستخدم غير واضحة وصعبة الاستخدام، خاصة في قسم دفع الفواتير.',
+      description:
+          'واجهة المستخدم غير واضحة وصعبة الاستخدام، خاصة في قسم دفع الفواتير.',
       imageAsset: 'assets/ui1.jpg',
       problemType: 'واجهة المستخدم',
       status: 'قيد المعالجة',
@@ -366,182 +398,198 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
   ];
 
   @override
-void initState() {
-  super.initState();
-  _mainTabController = TabController(length: 5, vsync: this);
-  _electricityTabController = TabController(length: 4, vsync: this);
-  _employeeTabController = TabController(length: 3, vsync: this);
-  _appTabController = TabController(length: 4, vsync: this);
-  _emergencyTabController = TabController(length: 3, vsync: this); // أضف هذا
-  _electricitySubTabController = TabController(length: 2, vsync: this);
-  _employeeSubTabController = TabController(length: 2, vsync: this);
-  _appSubTabController = TabController(length: 2, vsync: this);
-  _emergencySubTabController = TabController(length: 2, vsync: this); // أضف هذا
-  _animationController = AnimationController(
-    vsync: this,
-    duration: Duration(milliseconds: 500),
-  );
-  _filterReports();
-  
-  // إضافة مستمعين للتبويبات الفرعية
-  _electricitySubTabController.addListener(() {
-    setState(() {
-      _subTabStatus['electricity'] = _electricitySubTabController.index == 0 ? 'غير مقروءة' : 'مقروءة';
+  void initState() {
+    super.initState();
+    _mainTabController = TabController(length: 5, vsync: this);
+    _electricityTabController = TabController(length: 4, vsync: this);
+    _employeeTabController = TabController(length: 3, vsync: this);
+    _appTabController = TabController(length: 4, vsync: this);
+    _emergencyTabController = TabController(length: 3, vsync: this); // أضف هذا
+    _electricitySubTabController = TabController(length: 2, vsync: this);
+    _employeeSubTabController = TabController(length: 2, vsync: this);
+    _appSubTabController = TabController(length: 2, vsync: this);
+    _emergencySubTabController = TabController(
+      length: 2,
+      vsync: this,
+    ); // أضف هذا
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 500),
+    );
+    _filterReports();
+
+    // إضافة مستمعين للتبويبات الفرعية
+    _electricitySubTabController.addListener(() {
+      setState(() {
+        _subTabStatus['electricity'] = _electricitySubTabController.index == 0
+            ? 'غير مقروءة'
+            : 'مقروءة';
+      });
     });
-  });
-  
-  _employeeSubTabController.addListener(() {
-    setState(() {
-      _subTabStatus['employee'] = _employeeSubTabController.index == 0 ? 'غير مقروءة' : 'مقروءة';
+
+    _employeeSubTabController.addListener(() {
+      setState(() {
+        _subTabStatus['employee'] = _employeeSubTabController.index == 0
+            ? 'غير مقروءة'
+            : 'مقروءة';
+      });
     });
-  });
-  
-  _appSubTabController.addListener(() {
-    setState(() {
-      _subTabStatus['app'] = _appSubTabController.index == 0 ? 'غير مقروءة' : 'مقروءة';
+
+    _appSubTabController.addListener(() {
+      setState(() {
+        _subTabStatus['app'] = _appSubTabController.index == 0
+            ? 'غير مقروءة'
+            : 'مقروءة';
+      });
     });
-  });
-   _emergencySubTabController.addListener(() {
-    setState(() {
-      _subTabStatus['emergency'] = _emergencySubTabController.index == 0 ? 'غير مقروءة' : 'مقروءة';
+    _emergencySubTabController.addListener(() {
+      setState(() {
+        _subTabStatus['emergency'] = _emergencySubTabController.index == 0
+            ? 'غير مقروءة'
+            : 'مقروءة';
+      });
     });
-  });
-}
+  }
 
   @override
-void dispose() {
-  _mainTabController.dispose();
-  _electricityTabController.dispose();
-  _employeeTabController.dispose();
-  _appTabController.dispose();
-  _emergencyTabController.dispose(); // أضف هذا
-  _electricitySubTabController.dispose();
-  _employeeSubTabController.dispose();
-  _appSubTabController.dispose();
-  _emergencySubTabController.dispose(); // أضف هذا
-  _animationController.dispose();
-  _searchController.dispose();
-  super.dispose();
-}
+  void dispose() {
+    _mainTabController.dispose();
+    _electricityTabController.dispose();
+    _employeeTabController.dispose();
+    _appTabController.dispose();
+    _emergencyTabController.dispose(); // أضف هذا
+    _electricitySubTabController.dispose();
+    _employeeSubTabController.dispose();
+    _appSubTabController.dispose();
+    _emergencySubTabController.dispose(); // أضف هذا
+    _animationController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   void _filterReports() {
     final now = DateTime.now();
     _searchController.text.toLowerCase();
-    
+
     setState(() {
       _getAllProblems();
-      
+
       if (_selectedReportType == 'اليوم') {
       } else if (_selectedReportType == 'الأسبوع') {
         now.subtract(Duration(days: now.weekday - 1));
-      } else if (_selectedReportType == 'الشهر') {
-      }
+      } else if (_selectedReportType == 'الشهر') {}
     });
   }
 
   bool _problemMatchesSearch(dynamic problem, String searchQuery) {
-  if (searchQuery.isEmpty) return true;
-  
-  String name = '';
-  String type = '';
-  String location = '';
-  String date = '';
-  String time = '';
-  String status = '';
+    if (searchQuery.isEmpty) return true;
 
-  if (problem is ElectricityProblem) {
-    name = problem.customerName;
-    type = problem.problemType;
-    location = problem.location;
-    date = problem.date;
-    time = problem.time;
-    status = problem.status;
-  } else if (problem is EmployeeProblem) {
-    name = problem.customerName;
-    type = problem.problemType;
-    location = problem.location;
-    date = problem.date;
-    time = problem.time;
-    status = problem.status;
-  } else if (problem is AppProblem) {
-    name = problem.customerName;
-    type = problem.problemType;
-    location = problem.location;
-    date = problem.date;
-    time = problem.time;
-    status = problem.status;
-  } else if (problem is TransformerProblem) {
-    name = problem.customerName;
-    type = 'مشكلة في المحول';
-    location = problem.location;
-    date = problem.date;
-    time = problem.time;
-    status = problem.status;
-  } else if (problem is SafetyHazardProblem) {
-    name = problem.customerName;
-    type = 'خطر أماني';
-    location = problem.location;
-    date = problem.date;
-    time = problem.time;
-    status = problem.status;
-  } else if (problem is ConnectionProblem) {
-    name = problem.customerName;
-    type = problem.problemType;
-    location = problem.location;
-    date = problem.date;
-    time = problem.time;
-    status = problem.status;
-  } else if (problem is EmergencyReport) { // أضف هذا
-    name = problem.customerName;
-    type = problem.emergencyType;
-    location = problem.location;
-    date = problem.date;
-    time = problem.time;
-    status = problem.status;
+    String name = '';
+    String type = '';
+    String location = '';
+    String date = '';
+    String time = '';
+    String status = '';
+
+    if (problem is ElectricityProblem) {
+      name = problem.customerName;
+      type = problem.problemType;
+      location = problem.location;
+      date = problem.date;
+      time = problem.time;
+      status = problem.status;
+    } else if (problem is EmployeeProblem) {
+      name = problem.customerName;
+      type = problem.problemType;
+      location = problem.location;
+      date = problem.date;
+      time = problem.time;
+      status = problem.status;
+    } else if (problem is AppProblem) {
+      name = problem.customerName;
+      type = problem.problemType;
+      location = problem.location;
+      date = problem.date;
+      time = problem.time;
+      status = problem.status;
+    } else if (problem is TransformerProblem) {
+      name = problem.customerName;
+      type = 'مشكلة في المحول';
+      location = problem.location;
+      date = problem.date;
+      time = problem.time;
+      status = problem.status;
+    } else if (problem is SafetyHazardProblem) {
+      name = problem.customerName;
+      type = 'خطر أماني';
+      location = problem.location;
+      date = problem.date;
+      time = problem.time;
+      status = problem.status;
+    } else if (problem is ConnectionProblem) {
+      name = problem.customerName;
+      type = problem.problemType;
+      location = problem.location;
+      date = problem.date;
+      time = problem.time;
+      status = problem.status;
+    } else if (problem is EmergencyReport) {
+      // أضف هذا
+      name = problem.customerName;
+      type = problem.emergencyType;
+      location = problem.location;
+      date = problem.date;
+      time = problem.time;
+      status = problem.status;
+    }
+
+    return name.toLowerCase().contains(searchQuery) ||
+        type.toLowerCase().contains(searchQuery) ||
+        location.toLowerCase().contains(searchQuery) ||
+        date.contains(searchQuery) ||
+        time.contains(searchQuery) ||
+        status.toLowerCase().contains(searchQuery);
   }
 
-  return name.toLowerCase().contains(searchQuery) ||
-         type.toLowerCase().contains(searchQuery) ||
-         location.toLowerCase().contains(searchQuery) ||
-         date.contains(searchQuery) ||
-         time.contains(searchQuery) ||
-         status.toLowerCase().contains(searchQuery);
-}
-
   List<dynamic> _getAllProblems() {
-  return [
-    ..._electricityProblems,
-    ..._employeeProblems,
-    ..._appProblems,
-    ..._transformerProblems,
-    ..._safetyHazardProblems,
-    ..._connectionProblems,
-    ..._emergencyReports, // أضف هذا
-  ];
-}
+    return [
+      ..._electricityProblems,
+      ..._employeeProblems,
+      ..._appProblems,
+      ..._transformerProblems,
+      ..._safetyHazardProblems,
+      ..._connectionProblems,
+      ..._emergencyReports, // أضف هذا
+    ];
+  }
 
   // دالة لتصفية المشاكل حسب حالة القراءة
-  List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType) {
-  String currentSubTab = _subTabStatus[tabType] ?? 'غير مقروءة';
-  
-  return problems.where((problem) {
-    if (problem is ElectricityProblem) {
-      return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
-    } else if (problem is EmployeeProblem) {
-      return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
-    } else if (problem is AppProblem) {
-      return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
-    } else if (problem is TransformerProblem) {
-      return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
-    } else if (problem is SafetyHazardProblem) {
-      return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
-    } else if (problem is ConnectionProblem) {
-      return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
-    } else if (problem is EmergencyReport) { // أضف هذا
-      return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
-    }
-    return true;
-  }).toList();
-}
+  List<dynamic> _filterProblemsByReadStatus(
+    List<dynamic> problems,
+    String tabType,
+  ) {
+    String currentSubTab = _subTabStatus[tabType] ?? 'غير مقروءة';
+
+    return problems.where((problem) {
+      if (problem is ElectricityProblem) {
+        return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
+      } else if (problem is EmployeeProblem) {
+        return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
+      } else if (problem is AppProblem) {
+        return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
+      } else if (problem is TransformerProblem) {
+        return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
+      } else if (problem is SafetyHazardProblem) {
+        return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
+      } else if (problem is ConnectionProblem) {
+        return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
+      } else if (problem is EmergencyReport) {
+        // أضف هذا
+        return currentSubTab == 'غير مقروءة' ? !problem.isRead : problem.isRead;
+      }
+      return true;
+    }).toList();
+  }
 
   // دالة لتحديد لون المشكلة حسب الفئة
   Color _getProblemCategoryColor(String category) {
@@ -577,45 +625,79 @@ void dispose() {
 
   // دالة لتحديث حالة القراءة
   void _markAsRead(dynamic problem) {
-  setState(() {
-    if (problem is ElectricityProblem) {
-      final index = _electricityProblems.indexWhere((p) => p.customerId == problem.customerId);
-      if (index != -1) {
-        _electricityProblems[index] = _electricityProblems[index].copyWith(isRead: true);
+    setState(() {
+      if (problem is ElectricityProblem) {
+        final index = _electricityProblems.indexWhere(
+          (p) => p.customerId == problem.customerId,
+        );
+        if (index != -1) {
+          _electricityProblems[index] = _electricityProblems[index].copyWith(
+            isRead: true,
+          );
+        }
+      } else if (problem is EmployeeProblem) {
+        final index = _employeeProblems.indexWhere(
+          (p) =>
+              p.customerName == problem.customerName &&
+              p.reportedDate == problem.reportedDate,
+        );
+        if (index != -1) {
+          _employeeProblems[index] = _employeeProblems[index].copyWith(
+            isRead: true,
+          );
+        }
+      } else if (problem is AppProblem) {
+        final index = _appProblems.indexWhere(
+          (p) =>
+              p.customerName == problem.customerName &&
+              p.reportedDate == problem.reportedDate,
+        );
+        if (index != -1) {
+          _appProblems[index] = _appProblems[index].copyWith(isRead: true);
+        }
+      } else if (problem is TransformerProblem) {
+        final index = _transformerProblems.indexWhere(
+          (p) => p.transformerCode == problem.transformerCode,
+        );
+        if (index != -1) {
+          _transformerProblems[index] = _transformerProblems[index].copyWith(
+            isRead: true,
+          );
+        }
+      } else if (problem is SafetyHazardProblem) {
+        final index = _safetyHazardProblems.indexWhere(
+          (p) => p.customerName == problem.customerName,
+        );
+        if (index != -1) {
+          _safetyHazardProblems[index] = _safetyHazardProblems[index].copyWith(
+            isRead: true,
+          );
+        }
+      } else if (problem is ConnectionProblem) {
+        final index = _connectionProblems.indexWhere(
+          (p) => p.customerName == problem.customerName,
+        );
+        if (index != -1) {
+          _connectionProblems[index] = _connectionProblems[index].copyWith(
+            isRead: true,
+          );
+        }
+      } else if (problem is EmergencyReport) {
+        // أضف هذا
+        final index = _emergencyReports.indexWhere(
+          (p) =>
+              p.customerName == problem.customerName &&
+              p.reportedDate == problem.reportedDate,
+        );
+        if (index != -1) {
+          _emergencyReports[index] = _emergencyReports[index].copyWith(
+            isRead: true,
+          );
+        }
       }
-    } else if (problem is EmployeeProblem) {
-      final index = _employeeProblems.indexWhere((p) => p.customerName == problem.customerName && p.reportedDate == problem.reportedDate);
-      if (index != -1) {
-        _employeeProblems[index] = _employeeProblems[index].copyWith(isRead: true);
-      }
-    } else if (problem is AppProblem) {
-      final index = _appProblems.indexWhere((p) => p.customerName == problem.customerName && p.reportedDate == problem.reportedDate);
-      if (index != -1) {
-        _appProblems[index] = _appProblems[index].copyWith(isRead: true);
-      }
-    } else if (problem is TransformerProblem) {
-      final index = _transformerProblems.indexWhere((p) => p.transformerCode == problem.transformerCode);
-      if (index != -1) {
-        _transformerProblems[index] = _transformerProblems[index].copyWith(isRead: true);
-      }
-    } else if (problem is SafetyHazardProblem) {
-      final index = _safetyHazardProblems.indexWhere((p) => p.customerName == problem.customerName);
-      if (index != -1) {
-        _safetyHazardProblems[index] = _safetyHazardProblems[index].copyWith(isRead: true);
-      }
-    } else if (problem is ConnectionProblem) {
-      final index = _connectionProblems.indexWhere((p) => p.customerName == problem.customerName);
-      if (index != -1) {
-        _connectionProblems[index] = _connectionProblems[index].copyWith(isRead: true);
-      }
-    } else if (problem is EmergencyReport) { // أضف هذا
-      final index = _emergencyReports.indexWhere((p) => p.customerName == problem.customerName && p.reportedDate == problem.reportedDate);
-      if (index != -1) {
-        _emergencyReports[index] = _emergencyReports[index].copyWith(isRead: true);
-      }
-    }
-  });
-}
+    });
+  }
+
   // دالة لعرض خيارات التصفية
   void _showFilterOptions(String tabType) {
     showModalBottomSheet(
@@ -649,78 +731,117 @@ void dispose() {
                   ),
                   Divider(),
                   SizedBox(height: 10),
-                  
-                  Text('الحالة:', style: TextStyle(fontWeight: FontWeight.bold)),
+
+                  Text(
+                    'الحالة:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   Wrap(
                     spacing: 8,
-                    children: ['جميع الحالات', 'لم يتم المعالجة', 'قيد المعالجة', 'تم المعالجة'].map((status) {
-                      return FilterChip(
-                        label: Text(status),
-                        selected: _filterStatus == status,
-                        onSelected: (selected) {
-                          setState(() {
-                            _filterStatus = selected ? status : 'جميع الحالات';
-                          });
-                        },
-                      );
-                    }).toList(),
+                    children:
+                        [
+                          'جميع الحالات',
+                          'لم يتم المعالجة',
+                          'قيد المعالجة',
+                          'تم المعالجة',
+                        ].map((status) {
+                          return FilterChip(
+                            label: Text(status),
+                            selected: _filterStatus == status,
+                            onSelected: (selected) {
+                              setState(() {
+                                _filterStatus = selected
+                                    ? status
+                                    : 'جميع الحالات';
+                              });
+                            },
+                          );
+                        }).toList(),
                   ),
-                  
+
                   SizedBox(height: 20),
-                  
+
                   if (tabType == 'electricity') ...[
-                    Text('فئة المشكلة:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'فئة المشكلة:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     Wrap(
                       spacing: 8,
-                      children: ['جميع الفئات', 'انقطاع التيار الكهربائي', 'مشكلة في الفولطية', 'أخرى'].map((category) {
-                        return FilterChip(
-                          label: Text(category),
-                          selected: _filterPriority == category,
-                          onSelected: (selected) {
-                            setState(() {
-                              _filterPriority = selected ? category : 'جميع الفئات';
-                            });
-                          },
-                        );
-                      }).toList(),
+                      children:
+                          [
+                            'جميع الفئات',
+                            'انقطاع التيار الكهربائي',
+                            'مشكلة في الفولطية',
+                            'أخرى',
+                          ].map((category) {
+                            return FilterChip(
+                              label: Text(category),
+                              selected: _filterPriority == category,
+                              onSelected: (selected) {
+                                setState(() {
+                                  _filterPriority = selected
+                                      ? category
+                                      : 'جميع الفئات';
+                                });
+                              },
+                            );
+                          }).toList(),
                     ),
                     SizedBox(height: 20),
                   ],
-                  
-                  Text('المنطقة:', style: TextStyle(fontWeight: FontWeight.bold)),
+
+                  Text(
+                    'المنطقة:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   Wrap(
                     spacing: 8,
-                    children: ['جميع المناطق', 'المنطقة الوسطى', 'المنطقة الشرقية', 'المنطقة الغربية'].map((area) {
-                      return FilterChip(
-                        label: Text(area),
-                        selected: _filterArea == area,
-                        onSelected: (selected) {
-                          setState(() {
-                            _filterArea = selected ? area : 'جميع المناطق';
-                          });
-                        },
-                      );
-                    }).toList(),
+                    children:
+                        [
+                          'جميع المناطق',
+                          'المنطقة الوسطى',
+                          'المنطقة الشرقية',
+                          'المنطقة الغربية',
+                        ].map((area) {
+                          return FilterChip(
+                            label: Text(area),
+                            selected: _filterArea == area,
+                            onSelected: (selected) {
+                              setState(() {
+                                _filterArea = selected ? area : 'جميع المناطق';
+                              });
+                            },
+                          );
+                        }).toList(),
                   ),
-                  
+
                   SizedBox(height: 20),
-                  
-                  Text('الفترة:', style: TextStyle(fontWeight: FontWeight.bold)),
+
+                  Text(
+                    'الفترة:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   Row(
                     children: [
                       Expanded(
                         child: TextButton.icon(
                           icon: Icon(Icons.calendar_today, size: 16),
-                          label: Text(_filterStartDate == null 
-                            ? 'من تاريخ' 
-                            : DateFormat('yyyy-MM-dd').format(_filterStartDate!),
+                          label: Text(
+                            _filterStartDate == null
+                                ? 'من تاريخ'
+                                : DateFormat(
+                                    'yyyy-MM-dd',
+                                  ).format(_filterStartDate!),
                             style: TextStyle(fontSize: 12),
                           ),
                           onPressed: () async {
                             final picked = await showDatePicker(
                               context: context,
                               initialDate: DateTime.now(),
-                              firstDate: DateTime.now().subtract(Duration(days: 365)),
+                              firstDate: DateTime.now().subtract(
+                                Duration(days: 365),
+                              ),
                               lastDate: DateTime.now(),
                             );
                             if (picked != null) {
@@ -734,16 +855,21 @@ void dispose() {
                       Expanded(
                         child: TextButton.icon(
                           icon: Icon(Icons.calendar_today, size: 16),
-                          label: Text(_filterEndDate == null 
-                            ? 'إلى تاريخ' 
-                            : DateFormat('yyyy-MM-dd').format(_filterEndDate!),
+                          label: Text(
+                            _filterEndDate == null
+                                ? 'إلى تاريخ'
+                                : DateFormat(
+                                    'yyyy-MM-dd',
+                                  ).format(_filterEndDate!),
                             style: TextStyle(fontSize: 12),
                           ),
                           onPressed: () async {
                             final picked = await showDatePicker(
                               context: context,
                               initialDate: DateTime.now(),
-                              firstDate: DateTime.now().subtract(Duration(days: 365)),
+                              firstDate: DateTime.now().subtract(
+                                Duration(days: 365),
+                              ),
                               lastDate: DateTime.now(),
                             );
                             if (picked != null) {
@@ -756,9 +882,9 @@ void dispose() {
                       ),
                     ],
                   ),
-                  
+
                   Spacer(),
-                  
+
                   Row(
                     children: [
                       Expanded(
@@ -778,7 +904,9 @@ void dispose() {
                       SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: _primaryColor),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _primaryColor,
+                          ),
                           onPressed: () {
                             Navigator.pop(context);
                           },
@@ -797,47 +925,49 @@ void dispose() {
   }
 
   Color _getProblemColor(dynamic problem) {
-  if (problem is ElectricityProblem) {
-    return _getProblemCategoryColor(problem.problemCategory);
-  }
-  if (problem is EmployeeProblem) {
-    if (problem.problemType == 'موظف الصيانة') return _dangerColor;
-    if (problem.problemType == 'موظف الفواتير') return _warningColor;
-    return _infoColor;
-  }
-  if (problem is AppProblem) {
-    if (problem.problemType == 'تعطل في التطبيق') return _dangerColor;
-    if (problem.problemType == 'مشكلة في الدفع') return _warningColor;
-    if (problem.problemType == 'واجهة المستخدم') return _infoColor;
+    if (problem is ElectricityProblem) {
+      return _getProblemCategoryColor(problem.problemCategory);
+    }
+    if (problem is EmployeeProblem) {
+      if (problem.problemType == 'موظف الصيانة') return _dangerColor;
+      if (problem.problemType == 'موظف الفواتير') return _warningColor;
+      return _infoColor;
+    }
+    if (problem is AppProblem) {
+      if (problem.problemType == 'تعطل في التطبيق') return _dangerColor;
+      if (problem.problemType == 'مشكلة في الدفع') return _warningColor;
+      if (problem.problemType == 'واجهة المستخدم') return _infoColor;
+      return _darkColor;
+    }
+    if (problem is TransformerProblem) return _darkColor;
+    if (problem is SafetyHazardProblem) return _dangerColor;
+    if (problem is ConnectionProblem) return _secondaryColor;
+    if (problem is EmergencyReport) return _dangerColor; // أضف هذا
     return _darkColor;
   }
-  if (problem is TransformerProblem) return _darkColor;
-  if (problem is SafetyHazardProblem) return _dangerColor;
-  if (problem is ConnectionProblem) return _secondaryColor;
-  if (problem is EmergencyReport) return _dangerColor; // أضف هذا
-  return _darkColor;
-}
+
   IconData _getProblemIcon(dynamic problem) {
-  if (problem is ElectricityProblem) {
-    return _getProblemCategoryIcon(problem.problemCategory);
+    if (problem is ElectricityProblem) {
+      return _getProblemCategoryIcon(problem.problemCategory);
+    }
+    if (problem is EmployeeProblem) {
+      if (problem.problemType == 'موظف الصيانة') return Icons.engineering;
+      if (problem.problemType == 'موظف الفواتير') return Icons.receipt_long;
+      return Icons.person;
+    }
+    if (problem is AppProblem) {
+      if (problem.problemType == 'تعطل في التطبيق') return Icons.error_outline;
+      if (problem.problemType == 'مشكلة في الدفع') return Icons.payment;
+      if (problem.problemType == 'واجهة المستخدم') return Icons.phone_iphone;
+      return Icons.apps;
+    }
+    if (problem is TransformerProblem) return Icons.electrical_services;
+    if (problem is SafetyHazardProblem) return Icons.warning;
+    if (problem is ConnectionProblem) return Icons.power;
+    if (problem is EmergencyReport) return Icons.emergency; // أضف هذا
+    return Icons.report_problem;
   }
-  if (problem is EmployeeProblem) {
-    if (problem.problemType == 'موظف الصيانة') return Icons.engineering;
-    if (problem.problemType == 'موظف الفواتير') return Icons.receipt_long;
-    return Icons.person;
-  }
-  if (problem is AppProblem) {
-    if (problem.problemType == 'تعطل في التطبيق') return Icons.error_outline;
-    if (problem.problemType == 'مشكلة في الدفع') return Icons.payment;
-    if (problem.problemType == 'واجهة المستخدم') return Icons.phone_iphone;
-    return Icons.apps;
-  }
-  if (problem is TransformerProblem) return Icons.electrical_services;
-  if (problem is SafetyHazardProblem) return Icons.warning;
-  if (problem is ConnectionProblem) return Icons.power;
-  if (problem is EmergencyReport) return Icons.emergency; // أضف هذا
-  return Icons.report_problem;
-}
+
   String _formatNumber(int number) {
     return number.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -849,12 +979,12 @@ void dispose() {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     return themeProvider.isDarkMode ? Color(0xFF1E1E1E) : Colors.white;
   }
-  
+
   Color _textColor(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     return themeProvider.isDarkMode ? Colors.white : Color(0xFF1A2E35);
   }
-  
+
   Color _textSecondaryColor(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     return themeProvider.isDarkMode ? Colors.white70 : Color(0xFF5A6C7D);
@@ -867,7 +997,13 @@ void dispose() {
         builder: (context, setState) {
           return AlertDialog(
             backgroundColor: Colors.white,
-            title: Text('اختر التواريخ', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+            title: Text(
+              'اختر التواريخ',
+              style: TextStyle(
+                color: _primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             content: SizedBox(
               width: double.maxFinite,
               child: SingleChildScrollView(
@@ -879,39 +1015,62 @@ void dispose() {
                       lastDay: DateTime.now().add(Duration(days: 365)),
                       focusedDay: DateTime.now(),
                       calendarFormat: CalendarFormat.month,
-                      availableCalendarFormats: const {CalendarFormat.month: 'شهري'},
+                      availableCalendarFormats: const {
+                        CalendarFormat.month: 'شهري',
+                      },
                       headerStyle: HeaderStyle(
                         formatButtonVisible: false,
                         titleCentered: true,
-                        titleTextStyle: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold),
-                        leftChevronIcon: Icon(Icons.chevron_left, color: _primaryColor),
-                        rightChevronIcon: Icon(Icons.chevron_right, color: _primaryColor),
+                        titleTextStyle: TextStyle(
+                          color: _primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        leftChevronIcon: Icon(
+                          Icons.chevron_left,
+                          color: _primaryColor,
+                        ),
+                        rightChevronIcon: Icon(
+                          Icons.chevron_right,
+                          color: _primaryColor,
+                        ),
                       ),
                       calendarStyle: CalendarStyle(
-                        selectedDecoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle),
-                        todayDecoration: BoxDecoration(color: _accentColor, shape: BoxShape.circle),
+                        selectedDecoration: BoxDecoration(
+                          color: _primaryColor,
+                          shape: BoxShape.circle,
+                        ),
+                        todayDecoration: BoxDecoration(
+                          color: _accentColor,
+                          shape: BoxShape.circle,
+                        ),
                         weekendTextStyle: TextStyle(color: _dangerColor),
                         defaultTextStyle: TextStyle(color: _darkColor),
                         holidayTextStyle: TextStyle(color: _warningColor),
                       ),
                       selectedDayPredicate: (day) {
-                        return _selectedDates.any((selectedDate) =>
-                            selectedDate.year == day.year &&
-                            selectedDate.month == day.month &&
-                            selectedDate.day == day.day);
+                        return _selectedDates.any(
+                          (selectedDate) =>
+                              selectedDate.year == day.year &&
+                              selectedDate.month == day.month &&
+                              selectedDate.day == day.day,
+                        );
                       },
                       onDaySelected: (selectedDay, focusedDay) {
                         setState(() {
-                          bool isInList = _selectedDates.any((selectedDate) =>
-                              selectedDate.year == selectedDay.year &&
-                              selectedDate.month == selectedDay.month &&
-                              selectedDate.day == selectedDay.day);
-                          
-                          if (isInList) {
-                            _selectedDates.removeWhere((selectedDate) =>
+                          bool isInList = _selectedDates.any(
+                            (selectedDate) =>
                                 selectedDate.year == selectedDay.year &&
                                 selectedDate.month == selectedDay.month &&
-                                selectedDate.day == selectedDay.day);
+                                selectedDate.day == selectedDay.day,
+                          );
+
+                          if (isInList) {
+                            _selectedDates.removeWhere(
+                              (selectedDate) =>
+                                  selectedDate.year == selectedDay.year &&
+                                  selectedDate.month == selectedDay.month &&
+                                  selectedDate.day == selectedDay.day,
+                            );
                           } else {
                             _selectedDates.add(selectedDay);
                           }
@@ -934,7 +1093,10 @@ void dispose() {
                         children: _selectedDates.map((date) {
                           return Chip(
                             backgroundColor: _primaryColor.withOpacity(0.1),
-                            label: Text(DateFormat('yyyy-MM-dd').format(date), style: TextStyle(color: _primaryColor)),
+                            label: Text(
+                              DateFormat('yyyy-MM-dd').format(date),
+                              style: TextStyle(color: _primaryColor),
+                            ),
                             deleteIconColor: _primaryColor,
                             onDeleted: () {
                               setState(() {
@@ -955,7 +1117,11 @@ void dispose() {
                         ),
                         child: Column(
                           children: [
-                            Icon(Icons.calendar_today, color: Colors.grey[400], size: 48),
+                            Icon(
+                              Icons.calendar_today,
+                              color: Colors.grey[400],
+                              size: 48,
+                            ),
                             SizedBox(height: 8),
                             Text(
                               'لم يتم اختيار أي تاريخ',
@@ -1012,13 +1178,14 @@ void dispose() {
     }
 
     String reportPeriod = '';
-    
+
     if (_selectedReportTypeSystem == 'يومي' && _selectedDates.isNotEmpty) {
       final sortedDates = List<DateTime>.from(_selectedDates)..sort();
       if (_selectedDates.length == 1) {
         reportPeriod = DateFormat('yyyy-MM-dd').format(_selectedDates.first);
       } else {
-        reportPeriod = '${DateFormat('yyyy-MM-dd').format(sortedDates.first)} إلى ${DateFormat('yyyy-MM-dd').format(sortedDates.last)}';
+        reportPeriod =
+            '${DateFormat('yyyy-MM-dd').format(sortedDates.first)} إلى ${DateFormat('yyyy-MM-dd').format(sortedDates.last)}';
       }
     } else if (_selectedReportTypeSystem == 'أسبوعي') {
       reportPeriod = _selectedWeek ?? 'غير محدد';
@@ -1026,7 +1193,9 @@ void dispose() {
       reportPeriod = _selectedMonth ?? 'غير محدد';
     }
 
-    _showSuccessSnackbar('تم إنشاء التقرير لـ ${_selectedDates.length} يوم بنجاح');
+    _showSuccessSnackbar(
+      'تم إنشاء التقرير لـ ${_selectedDates.length} يوم بنجاح',
+    );
     _showGeneratedReport(reportPeriod);
   }
 
@@ -1035,24 +1204,55 @@ void dispose() {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('التقرير $period', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+        title: Text(
+          'التقرير $period',
+          style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold),
+        ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('نوع التقرير: $_selectedReportTypeSystem', style: TextStyle(color: _darkColor)),
-              if (_selectedReportTypeSystem == 'يومي' && _selectedDates.isNotEmpty)
-                Text('عدد الأيام: ${_selectedDates.length}', style: TextStyle(color: _darkColor)),
+              Text(
+                'نوع التقرير: $_selectedReportTypeSystem',
+                style: TextStyle(color: _darkColor),
+              ),
+              if (_selectedReportTypeSystem == 'يومي' &&
+                  _selectedDates.isNotEmpty)
+                Text(
+                  'عدد الأيام: ${_selectedDates.length}',
+                  style: TextStyle(color: _darkColor),
+                ),
               if (_selectedWeek != null)
-                Text('الأسبوع: $_selectedWeek', style: TextStyle(color: _darkColor)),
+                Text(
+                  'الأسبوع: $_selectedWeek',
+                  style: TextStyle(color: _darkColor),
+                ),
               if (_selectedMonth != null)
-                Text('الشهر: $_selectedMonth', style: TextStyle(color: _darkColor)),
+                Text(
+                  'الشهر: $_selectedMonth',
+                  style: TextStyle(color: _darkColor),
+                ),
               SizedBox(height: 16),
-              Text('ملخص التقرير:', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
-              Text('- إجمالي الفواتير: ${reports[0]['totalBills']}', style: TextStyle(color: _darkColor)),
-              Text('- الفواتير المدفوعة: ${reports[0]['paidBills']}', style: TextStyle(color: _darkColor)),
-              Text('- الفواتير غير المدفوعة: ${(reports[0]['totalBills'] as int) - (reports[0]['paidBills'] as int)}', style: TextStyle(color: _darkColor)),
+              Text(
+                'ملخص التقرير:',
+                style: TextStyle(
+                  color: _primaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                '- إجمالي الفواتير: ${reports[0]['totalBills']}',
+                style: TextStyle(color: _darkColor),
+              ),
+              Text(
+                '- الفواتير المدفوعة: ${reports[0]['paidBills']}',
+                style: TextStyle(color: _darkColor),
+              ),
+              Text(
+                '- الفواتير غير المدفوعة: ${(reports[0]['totalBills'] as int) - (reports[0]['paidBills'] as int)}',
+                style: TextStyle(color: _darkColor),
+              ),
             ],
           ),
         ),
@@ -1086,7 +1286,13 @@ void dispose() {
           pageFormat: PdfPageFormat.a4,
           build: (pw.Context context) {
             return [
-              pw.Text('تقرير نظام الكهرباء', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+              pw.Text(
+                'تقرير نظام الكهرباء',
+                style: pw.TextStyle(
+                  fontSize: 24,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
               pw.SizedBox(height: 20),
               pw.Text('الفترة: $period'),
               pw.Text('نوع التقرير: $_selectedReportTypeSystem'),
@@ -1097,7 +1303,6 @@ void dispose() {
 
       final Uint8List pdfBytes = await pdf.save();
       await _sharePdfFile(pdfBytes, period);
-
     } catch (e) {
       _showErrorSnackbar('خطأ في تصدير التقرير: $e');
     }
@@ -1105,16 +1310,11 @@ void dispose() {
 
   Future<void> _sharePdfFile(Uint8List pdfBytes, String period) async {
     try {
-      final fileName = 'تقرير_الكهرباء_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      
+      final fileName =
+          'تقرير_الكهرباء_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
       await Share.shareXFiles(
-        [
-          XFile.fromData(
-            pdfBytes,
-            name: fileName,
-            mimeType: 'application/pdf',
-          )
-        ],
+        [XFile.fromData(pdfBytes, name: fileName, mimeType: 'application/pdf')],
         subject: 'تقرير الكهرباء - $period',
         text: 'مرفق تقرير بلاغات الكهرباء للفترة $period',
       );
@@ -1144,527 +1344,568 @@ void dispose() {
       ),
     );
   }
-  Widget _buildReportsView(BuildContext context) {
-  final themeProvider = Provider.of<ThemeProvider>(context);
-  final isDarkMode = themeProvider.isDarkMode;
 
-  return SingleChildScrollView(
-    padding: const EdgeInsets.all(16),
-    child: Column(
+  Widget _buildReportsView(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // تبويبات داخلية (إنشاء التقارير / التقارير الواردة)
+          Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDarkMode ? Colors.white24 : Colors.grey[300]!,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildReportInnerTabButton(
+                    'إنشاء التقارير',
+                    0,
+                    isDarkMode,
+                  ),
+                ),
+                Expanded(
+                  child: _buildReportInnerTabButton(
+                    'التقارير الواردة',
+                    1,
+                    isDarkMode,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // عرض المحتوى حسب التبويب المختار
+          _currentReportTab == 0
+              ? _buildCreateReportSection(isDarkMode)
+              : _buildReceivedReportsSection(isDarkMode),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportInnerTabButton(
+    String title,
+    int tabIndex,
+    bool isDarkMode,
+  ) {
+    bool isSelected = _currentReportTab == tabIndex;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentReportTab = tabIndex;
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? _primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? _primaryColor : Colors.transparent,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            title,
+            style: TextStyle(
+              color: isSelected
+                  ? Colors.white
+                  : (isDarkMode ? Colors.white : _primaryColor),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreateReportSection(bool isDarkMode) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey[300]!),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.filter_alt, color: _primaryColor, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'فلترة التقارير',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode
+                              ? Colors.white
+                              : _textColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  _buildReportTypeFilter(isDarkMode),
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(height: 20),
+
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey[300]!),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: _buildReportOptions(isDarkMode),
+            ),
+          ),
+
+          SizedBox(height: 20),
+
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: _buildGenerateReportButton(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReceivedReportsSection(bool isDarkMode) {
+    // بيانات تجريبية للتقارير الواردة
+    final List<Map<String, dynamic>> receivedReports = [
+      {
+        'id': 'REP-ELEC-2024-001',
+        'title': 'تقرير بلاغات الكهرباء الشهري',
+        'sender': 'قسم البلاغات',
+        'date': DateTime.now().subtract(Duration(days: 2)),
+        'type': 'شهري',
+        'size': '1.8 MB',
+        'status': 'مستلم',
+        'fileType': 'PDF',
+        'area': 'المنطقة الشرقية',
+      },
+      {
+        'id': 'REP-ELEC-2024-002',
+        'title': 'تقرير بلاغات الموظفين الأسبوعي',
+        'sender': 'فرع بغداد',
+        'date': DateTime.now().subtract(Duration(days: 5)),
+        'type': 'أسبوعي',
+        'size': '850 KB',
+        'status': 'مستلم',
+        'fileType': 'PDF',
+        'area': 'حي السلام',
+      },
+      {
+        'id': 'REP-ELEC-2024-003',
+        'title': 'تقرير بلاغات الطوارئ',
+        'sender': 'غرفة العمليات',
+        'date': DateTime.now().subtract(Duration(days: 1)),
+        'type': 'يومي',
+        'size': '650 KB',
+        'status': 'غير مقروء',
+        'fileType': 'PDF',
+        'area': 'جميع المناطق',
+      },
+    ];
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // تبويبات داخلية (إنشاء التقارير / التقارير الواردة)
-        Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: isDarkMode ? Colors.white24 : Colors.grey[300]!),
+        Text(
+          'التقارير المستلمة',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : _textColor(context),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildReportInnerTabButton('إنشاء التقارير', 0, isDarkMode),
-              ),
-              Expanded(
-                child: _buildReportInnerTabButton('التقارير الواردة', 1, isDarkMode),
-              ),
-            ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'عرض وإدارة جميع التقارير التي تم استلامها',
+          style: TextStyle(
+            color: isDarkMode ? Colors.white70 : _textSecondaryColor(context),
           ),
         ),
         const SizedBox(height: 20),
 
-        // عرض المحتوى حسب التبويب المختار
-        _currentReportTab == 0 
-            ? _buildCreateReportSection(isDarkMode)
-            : _buildReceivedReportsSection(isDarkMode),
-      ],
-    ),
-  );
-}
-Widget _buildReportInnerTabButton(String title, int tabIndex, bool isDarkMode) {
-  bool isSelected = _currentReportTab == tabIndex;
-  return GestureDetector(
-    onTap: () {
-      setState(() {
-        _currentReportTab = tabIndex;
-      });
-    },
-    child: Container(
-      decoration: BoxDecoration(
-        color: isSelected ? _primaryColor : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? _primaryColor : Colors.transparent,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.white : (isDarkMode ? Colors.white : _primaryColor),
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    ),
-  );
-}
-Widget _buildCreateReportSection(bool isDarkMode) {
-  return SingleChildScrollView(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
+        // إحصائيات سريعة
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDarkMode ? Color(0xFF1E1E1E) : _lightColor,
             borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey[300]!),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.filter_alt, color: _primaryColor, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'فلترة التقارير',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isDarkMode ? Colors.white : _textColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 16),
-                _buildReportTypeFilter(isDarkMode),
-              ],
+            border: Border.all(
+              color: isDarkMode ? Colors.white24 : Colors.grey[300]!,
             ),
           ),
-        ),
-        
-        SizedBox(height: 20),
-        
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey[300]!),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _buildReportOptions(isDarkMode),
-          ),
-        ),
-        
-        SizedBox(height: 20),
-        
-        Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: _buildGenerateReportButton(),
-        ),
-      ],
-    ),
-  );
-}
-Widget _buildReceivedReportsSection(bool isDarkMode) {
-  // بيانات تجريبية للتقارير الواردة
-  final List<Map<String, dynamic>> receivedReports = [
-    {
-      'id': 'REP-ELEC-2024-001',
-      'title': 'تقرير بلاغات الكهرباء الشهري',
-      'sender': 'قسم البلاغات',
-      'date': DateTime.now().subtract(Duration(days: 2)),
-      'type': 'شهري',
-      'size': '1.8 MB',
-      'status': 'مستلم',
-      'fileType': 'PDF',
-      'area': 'المنطقة الشرقية',
-    },
-    {
-      'id': 'REP-ELEC-2024-002',
-      'title': 'تقرير بلاغات الموظفين الأسبوعي',
-      'sender': 'فرع بغداد',
-      'date': DateTime.now().subtract(Duration(days: 5)),
-      'type': 'أسبوعي',
-      'size': '850 KB',
-      'status': 'مستلم',
-      'fileType': 'PDF',
-      'area': 'حي السلام',
-    },
-    {
-      'id': 'REP-ELEC-2024-003',
-      'title': 'تقرير بلاغات الطوارئ',
-      'sender': 'غرفة العمليات',
-      'date': DateTime.now().subtract(Duration(days: 1)),
-      'type': 'يومي',
-      'size': '650 KB',
-      'status': 'غير مقروء',
-      'fileType': 'PDF',
-      'area': 'جميع المناطق',
-    },
-  ];
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'التقارير المستلمة',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: isDarkMode ? Colors.white : _textColor(context),
-        ),
-      ),
-      const SizedBox(height: 8),
-      Text(
-        'عرض وإدارة جميع التقارير التي تم استلامها',
-        style: TextStyle(
-          color: isDarkMode ? Colors.white70 : _textSecondaryColor(context),
-        ),
-      ),
-      const SizedBox(height: 20),
-      
-      // إحصائيات سريعة
-      Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDarkMode ? Color(0xFF1E1E1E) : _lightColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isDarkMode ? Colors.white24 : Colors.grey[300]!),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Column(
-              children: [
-                Text(
-                  receivedReports.length.toString(),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: _primaryColor,
-                  ),
-                ),
-                Text(
-                  'إجمالي التقارير',
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white70 : Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text(
-                  receivedReports.where((r) => r['status'] == 'غير مقروء').length.toString(),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: _warningColor,
-                  ),
-                ),
-                Text(
-                  'غير مقروء',
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white70 : Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text(
-                  '8.5 MB',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: _successColor,
-                  ),
-                ),
-                Text(
-                  'الحجم الإجمالي',
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white70 : Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      
-      const SizedBox(height: 20),
-      
-      // قائمة التقارير
-      ...receivedReports.map((report) => _buildReceivedReportCard(report, isDarkMode)),
-    ],
-  );
-}
-Widget _buildReceivedReportCard(Map<String, dynamic> report, bool isDarkMode) {
-  bool isUnread = report['status'] == 'غير مقروء';
-  
-  return Container(
-    margin: EdgeInsets.only(bottom: 12),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      color: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
-      border: Border.all(color: isDarkMode ? Colors.white24 : Colors.grey[200]!),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 8,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: ListTile(
-      contentPadding: EdgeInsets.all(16),
-      leading: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: _primaryColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          Icons.picture_as_pdf_rounded,
-          color: _primaryColor,
-        ),
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              report['title'],
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: isDarkMode ? Colors.white : _textColor(context),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (isUnread)
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: _warningColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 4),
-          Text(
-            'من: ${report['sender']}',
-            style: TextStyle(
-              fontSize: 12,
-              color: isDarkMode ? Colors.white70 : _textSecondaryColor(context),
-            ),
-          ),
-          SizedBox(height: 2),
-          Row(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Text(
-                '${DateFormat('yyyy-MM-dd').format(report['date'])} • ${report['type']} • ${report['size']}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDarkMode ? Colors.white70 : _textSecondaryColor(context),
-                ),
+              Column(
+                children: [
+                  Text(
+                    receivedReports.length.toString(),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: _primaryColor,
+                    ),
+                  ),
+                  Text(
+                    'إجمالي التقارير',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    receivedReports
+                        .where((r) => r['status'] == 'غير مقروء')
+                        .length
+                        .toString(),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: _warningColor,
+                    ),
+                  ),
+                  Text(
+                    'غير مقروء',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    '8.5 MB',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: _successColor,
+                    ),
+                  ),
+                  Text(
+                    'الحجم الإجمالي',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-      trailing: PopupMenuButton<String>(
-        icon: Icon(Icons.more_vert_rounded, color: isDarkMode ? Colors.white70 : _textSecondaryColor(context)),
-        onSelected: (value) {
-          _handleReportAction(value, report);
-        },
-        itemBuilder: (BuildContext context) => [
-          PopupMenuItem<String>(
-            value: 'view',
-            child: Row(
-              children: [
-                Icon(Icons.visibility_rounded, size: 18, color: _primaryColor),
-                SizedBox(width: 8),
-                Text('عرض التقرير'),
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'download',
-            child: Row(
-              children: [
-                Icon(Icons.download_rounded, size: 18, color: _successColor),
-                SizedBox(width: 8),
-                Text('تحميل'),
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'share',
-            child: Row(
-              children: [
-                Icon(Icons.share_rounded, size: 18, color: _accentColor),
-                SizedBox(width: 8),
-                Text('مشاركة'),
-              ],
-            ),
-          ),
-        ],
-      ),
-      onTap: () {
-        _viewReceivedReport(report);
-      },
-    ),
-  );
-}
-void _handleReportAction(String action, Map<String, dynamic> report) {
-  switch (action) {
-    case 'view':
-      _viewReceivedReport(report);
-      break;
-    case 'download':
-      _downloadReport(report);
-      break;
-    case 'share':
-      _shareReport(report);
-      break;
-  }
-}
+        ),
 
-void _viewReceivedReport(Map<String, dynamic> report) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: Colors.white,
-      title: Row(
-        children: [
-          Icon(Icons.picture_as_pdf_rounded, color: _primaryColor),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              report['title'],
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: _primaryColor,
-              ),
-            ),
+        const SizedBox(height: 20),
+
+        // قائمة التقارير
+        ...receivedReports.map(
+          (report) => _buildReceivedReportCard(report, isDarkMode),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReceivedReportCard(
+    Map<String, dynamic> report,
+    bool isDarkMode,
+  ) {
+    bool isUnread = report['status'] == 'غير مقروء';
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
+        border: Border.all(
+          color: isDarkMode ? Colors.white24 : Colors.grey[200]!,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
-      content: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+      child: ListTile(
+        contentPadding: EdgeInsets.all(16),
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: _primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(Icons.picture_as_pdf_rounded, color: _primaryColor),
+        ),
+        title: Row(
           children: [
-            _buildReportDetailRow('المرسل:', report['sender']),
-            _buildReportDetailRow('النوع:', report['type']),
-            _buildReportDetailRow('المنطقة:', report['area']),
-            _buildReportDetailRow('الحجم:', report['size']),
-            _buildReportDetailRow('صيغة الملف:', report['fileType']),
-            _buildReportDetailRow('التاريخ:', DateFormat('yyyy-MM-dd HH:mm').format(report['date'])),
-            _buildReportDetailRow('الحالة:', report['status']),
-            SizedBox(height: 16),
-            Text(
-              'ملخص التقرير:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: _primaryColor,
+            Expanded(
+              child: Text(
+                report['title'],
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: isDarkMode ? Colors.white : _textColor(context),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            SizedBox(height: 8),
+            if (isUnread)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _warningColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 4),
             Text(
-              'هذا التقرير يحتوي على بيانات البلاغات المستلمة للكهرباء. يشمل بلاغات الكهرباء، بلاغات الموظفين، بلاغات التطبيق، وبلاغات الطوارئ.',
+              'من: ${report['sender']}',
               style: TextStyle(
-                color: Colors.grey[700],
+                fontSize: 12,
+                color: isDarkMode
+                    ? Colors.white70
+                    : _textSecondaryColor(context),
+              ),
+            ),
+            SizedBox(height: 2),
+            Row(
+              children: [
+                Text(
+                  '${DateFormat('yyyy-MM-dd').format(report['date'])} • ${report['type']} • ${report['size']}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDarkMode
+                        ? Colors.white70
+                        : _textSecondaryColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: PopupMenuButton<String>(
+          icon: Icon(
+            Icons.more_vert_rounded,
+            color: isDarkMode ? Colors.white70 : _textSecondaryColor(context),
+          ),
+          onSelected: (value) {
+            _handleReportAction(value, report);
+          },
+          itemBuilder: (BuildContext context) => [
+            PopupMenuItem<String>(
+              value: 'view',
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.visibility_rounded,
+                    size: 18,
+                    color: _primaryColor,
+                  ),
+                  SizedBox(width: 8),
+                  Text('عرض التقرير'),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'download',
+              child: Row(
+                children: [
+                  Icon(Icons.download_rounded, size: 18, color: _successColor),
+                  SizedBox(width: 8),
+                  Text('تحميل'),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'share',
+              child: Row(
+                children: [
+                  Icon(Icons.share_rounded, size: 18, color: _accentColor),
+                  SizedBox(width: 8),
+                  Text('مشاركة'),
+                ],
               ),
             ),
           ],
         ),
+        onTap: () {
+          _viewReceivedReport(report);
+        },
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('إغلاق'),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _primaryColor,
-            foregroundColor: Colors.white,
-          ),
-          onPressed: () => _downloadReport(report),
-          child: Text('تحميل'),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 
-Widget _buildReportDetailRow(String label, String value) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+  void _handleReportAction(String action, Map<String, dynamic> report) {
+    switch (action) {
+      case 'view':
+        _viewReceivedReport(report);
+        break;
+      case 'download':
+        _downloadReport(report);
+        break;
+      case 'share':
+        _shareReport(report);
+        break;
+    }
+  }
+
+  void _viewReceivedReport(Map<String, dynamic> report) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: Row(
+          children: [
+            Icon(Icons.picture_as_pdf_rounded, color: _primaryColor),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                report['title'],
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: _primaryColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildReportDetailRow('المرسل:', report['sender']),
+              _buildReportDetailRow('النوع:', report['type']),
+              _buildReportDetailRow('المنطقة:', report['area']),
+              _buildReportDetailRow('الحجم:', report['size']),
+              _buildReportDetailRow('صيغة الملف:', report['fileType']),
+              _buildReportDetailRow(
+                'التاريخ:',
+                DateFormat('yyyy-MM-dd HH:mm').format(report['date']),
+              ),
+              _buildReportDetailRow('الحالة:', report['status']),
+              SizedBox(height: 16),
+              Text(
+                'ملخص التقرير:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: _primaryColor,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'هذا التقرير يحتوي على بيانات البلاغات المستلمة للكهرباء. يشمل بلاغات الكهرباء، بلاغات الموظفين، بلاغات التطبيق، وبلاغات الطوارئ.',
+                style: TextStyle(color: Colors.grey[700]),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('إغلاق'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => _downloadReport(report),
+            child: Text('تحميل'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
             ),
           ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            style: TextStyle(
-              color: Colors.grey[800],
-            ),
+          Expanded(
+            flex: 3,
+            child: Text(value, style: TextStyle(color: Colors.grey[800])),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
-void _downloadReport(Map<String, dynamic> report) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('جاري تحميل: ${report['title']}'),
-      backgroundColor: _successColor,
-    ),
-  );
-}
+  void _downloadReport(Map<String, dynamic> report) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('جاري تحميل: ${report['title']}'),
+        backgroundColor: _successColor,
+      ),
+    );
+  }
 
-void _shareReport(Map<String, dynamic> report) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('مشاركة: ${report['title']}'),
-      backgroundColor: _primaryColor,
-    ),
-  );
-}
+  void _shareReport(Map<String, dynamic> report) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('مشاركة: ${report['title']}'),
+        backgroundColor: _primaryColor,
+      ),
+    );
+  }
+
   Widget _buildReportTypeFilter(bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1702,7 +1943,9 @@ void _shareReport(Map<String, dynamic> report) {
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: BorderSide(color: isSelected ? _primaryColor : Colors.grey[300]!),
+                side: BorderSide(
+                  color: isSelected ? _primaryColor : Colors.grey[300]!,
+                ),
               ),
             );
           }).toList(),
@@ -1771,7 +2014,10 @@ void _shareReport(Map<String, dynamic> report) {
             children: _selectedDates.map((date) {
               return Chip(
                 backgroundColor: _primaryColor.withOpacity(0.1),
-                label: Text(DateFormat('yyyy-MM-dd').format(date), style: TextStyle(color: _primaryColor)),
+                label: Text(
+                  DateFormat('yyyy-MM-dd').format(date),
+                  style: TextStyle(color: _primaryColor),
+                ),
                 deleteIconColor: _primaryColor,
                 onDeleted: () {
                   setState(() {
@@ -1794,9 +2040,17 @@ void _shareReport(Map<String, dynamic> report) {
               children: [
                 _buildStatItem('${_selectedDates.length}', 'يوم', Icons.today),
                 Container(height: 30, width: 1, color: Colors.grey[300]),
-                _buildStatItem(DateFormat('yyyy-MM-dd').format(_selectedDates.first), 'التاريخ الأول', Icons.calendar_today),
+                _buildStatItem(
+                  DateFormat('yyyy-MM-dd').format(_selectedDates.first),
+                  'التاريخ الأول',
+                  Icons.calendar_today,
+                ),
                 Container(height: 30, width: 1, color: Colors.grey[300]),
-                _buildStatItem(DateFormat('yyyy-MM-dd').format(_selectedDates.last), 'التاريخ الأخير', Icons.calendar_today),
+                _buildStatItem(
+                  DateFormat('yyyy-MM-dd').format(_selectedDates.last),
+                  'التاريخ الأخير',
+                  Icons.calendar_today,
+                ),
               ],
             ),
           ),
@@ -1814,15 +2068,15 @@ void _shareReport(Map<String, dynamic> report) {
                 SizedBox(height: 8),
                 Text(
                   'لم يتم اختيار أي تواريخ',
-                  style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 SizedBox(height: 8),
                 Text(
                   'انقر على الزر أعلاه لفتح التقويم واختيار التواريخ',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -1846,13 +2100,7 @@ void _shareReport(Map<String, dynamic> report) {
             color: _primaryColor,
           ),
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
       ],
     );
   }
@@ -1890,7 +2138,9 @@ void _shareReport(Map<String, dynamic> report) {
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: BorderSide(color: isSelected ? _primaryColor : Colors.grey[300]!),
+                side: BorderSide(
+                  color: isSelected ? _primaryColor : Colors.grey[300]!,
+                ),
               ),
             );
           }).toList(),
@@ -1932,7 +2182,9 @@ void _shareReport(Map<String, dynamic> report) {
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: BorderSide(color: isSelected ? _primaryColor : Colors.grey[300]!),
+                side: BorderSide(
+                  color: isSelected ? _primaryColor : Colors.grey[300]!,
+                ),
               ),
             );
           }).toList(),
@@ -1943,7 +2195,7 @@ void _shareReport(Map<String, dynamic> report) {
 
   Widget _buildGenerateReportButton() {
     bool isFormValid = false;
-    
+
     switch (_selectedReportTypeSystem) {
       case 'يومي':
         isFormValid = _selectedDates.isNotEmpty;
@@ -1960,7 +2212,7 @@ void _shareReport(Map<String, dynamic> report) {
       width: double.infinity,
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: isFormValid 
+        gradient: isFormValid
             ? LinearGradient(
                 colors: [_primaryColor, _secondaryColor],
                 begin: Alignment.centerLeft,
@@ -2073,10 +2325,7 @@ void _shareReport(Map<String, dynamic> report) {
                     ),
                     child: Text(
                       "المنطقة الوسطى",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.white, fontSize: 14),
                     ),
                   ),
                 ],
@@ -2087,29 +2336,29 @@ void _shareReport(Map<String, dynamic> report) {
               child: Container(
                 color: Color(0xFFE8F5E9),
                 child: ListView(
-  padding: EdgeInsets.zero,
-  children: [
-    SizedBox(height: 20),
-    _buildDrawerMenuItem(
-      icon: Icons.settings_rounded,
-      title: 'الإعدادات',
-      onTap: () {
-        Navigator.pop(context);
-        _showSettingsScreen(context);
-      },
-    ),
-    
-    _buildDrawerMenuItem(
-      icon: Icons.help_rounded,
-      title: 'المساعدة والدعم',
-      onTap: () {
-        Navigator.pop(context);
-        _showHelpSupportScreen(context);
-      },
-    ),
+                  padding: EdgeInsets.zero,
+                  children: [
+                    SizedBox(height: 20),
+                    _buildDrawerMenuItem(
+                      icon: Icons.settings_rounded,
+                      title: 'الإعدادات',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showSettingsScreen(context);
+                      },
+                    ),
 
-    SizedBox(height: 30),
-                    
+                    _buildDrawerMenuItem(
+                      icon: Icons.help_rounded,
+                      title: 'المساعدة والدعم',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showHelpSupportScreen(context);
+                      },
+                    ),
+
+                    SizedBox(height: 30),
+
                     _buildDrawerMenuItem(
                       icon: Icons.logout_rounded,
                       title: 'تسجيل الخروج',
@@ -2120,15 +2369,12 @@ void _shareReport(Map<String, dynamic> report) {
                     ),
 
                     SizedBox(height: 40),
-                    
+
                     Container(
                       padding: EdgeInsets.all(16),
                       child: Column(
                         children: [
-                          Divider(
-                            color: Colors.grey[400],
-                            height: 1,
-                          ),
+                          Divider(color: Colors.grey[400], height: 1),
                           SizedBox(height: 16),
                           Container(
                             padding: EdgeInsets.all(8),
@@ -2190,24 +2436,18 @@ void _shareReport(Map<String, dynamic> report) {
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ListTile(
         leading: Container(
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: isLogout 
+            color: isLogout
                 ? Colors.red.withOpacity(0.1)
                 : _primaryColor.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 20,
-          ),
+          child: Icon(icon, color: iconColor, size: 20),
         ),
         title: Text(
           title,
@@ -2224,51 +2464,47 @@ void _shareReport(Map<String, dynamic> report) {
         ),
         onTap: onTap,
         contentPadding: EdgeInsets.symmetric(horizontal: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
 
   void _showLogoutConfirmation(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: Colors.white,
-      title: Row(
-        children: [
-          Icon(Icons.logout, color: Colors.red),
-          SizedBox(width: 8),
-          Text('تسجيل الخروج'),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: Row(
+          children: [
+            Icon(Icons.logout, color: Colors.red),
+            SizedBox(width: 8),
+            Text('تسجيل الخروج'),
+          ],
+        ),
+        content: Text('هل أنت متأكد من أنك تريد تسجيل الخروج؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // هذا السطر يرجلك لواجهة تسجيل الدخول
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => EsigninScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('تسجيل الخروج'),
+          ),
         ],
       ),
-      content: Text('هل أنت متأكد من أنك تريد تسجيل الخروج؟'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('إلغاء'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            // هذا السطر يرجلك لواجهة تسجيل الدخول
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EsigninScreen(),
-              ),
-            );
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-          child: Text('تسجيل الخروج'),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 
-   void _showSettingsScreen(BuildContext context) {
+  void _showSettingsScreen(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -2289,7 +2525,6 @@ void _shareReport(Map<String, dynamic> report) {
       ),
     );
   }
-
 
   void _showHelpSupportScreen(BuildContext context) {
     Navigator.push(
@@ -2321,21 +2556,21 @@ void _shareReport(Map<String, dynamic> report) {
           children: [
             Icon(Icons.electrical_services, color: Colors.white, size: 24),
             SizedBox(width: 8),
-            Text('نظام الإبلاغات - الكهرباء',
+            Text(
+              'نظام الإبلاغات - الكهرباء',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
-              )),
+              ),
+            ),
           ],
         ),
         backgroundColor: _primaryColor,
         centerTitle: true,
         elevation: 3,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(12),
-          ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
         ),
         leading: Builder(
           builder: (context) => IconButton(
@@ -2344,55 +2579,58 @@ void _shareReport(Map<String, dynamic> report) {
           ),
         ),
         actions: [
-    // زر الإشعارات
-    IconButton(
-      icon: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
-          Positioned(
-            right: -4, // تعديل الموضع
-            top: -4,
-            child: Container(
-              padding: EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              constraints: BoxConstraints(minWidth: 16, minHeight: 16),
-              child: Text(
-                '3',
-                style: TextStyle(
+          // زر الإشعارات
+          IconButton(
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  Icons.notifications_outlined,
                   color: Colors.white,
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
+                  size: 24,
                 ),
-                textAlign: TextAlign.center,
-              ),
+                Positioned(
+                  right: -4, // تعديل الموضع
+                  top: -4,
+                  child: Container(
+                    padding: EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      '3',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            onPressed: () => _showNotificationsScreen(context),
+          ),
+          SizedBox(width: 8),
+          // صورة المستخدم
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.white.withOpacity(0.2),
+              child: Icon(Icons.person, size: 18, color: Colors.white),
             ),
           ),
         ],
-      ),
-      onPressed: () => _showNotificationsScreen(context),
-    ),
-    SizedBox(width: 8),
-    // صورة المستخدم
-    Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: CircleAvatar(
-        radius: 16,
-        backgroundColor: Colors.white.withOpacity(0.2),
-        child: Icon(Icons.person, size: 18, color: Colors.white),
-      ),
-    ),
-  ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(70),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(
-              ),
+              borderRadius: BorderRadius.vertical(),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black12,
@@ -2401,7 +2639,7 @@ void _shareReport(Map<String, dynamic> report) {
                 ),
               ],
             ),
-                padding: EdgeInsets.symmetric(horizontal: 4),
+            padding: EdgeInsets.symmetric(horizontal: 4),
             child: TabBar(
               controller: _mainTabController,
               indicator: BoxDecoration(
@@ -2414,9 +2652,15 @@ void _shareReport(Map<String, dynamic> report) {
               ),
               indicatorWeight: 4,
               indicatorSize: TabBarIndicatorSize.tab,
-              labelStyle: TextStyle(fontSize: 9, fontWeight: FontWeight.bold), // تصغير الخط
-              unselectedLabelStyle: TextStyle(fontSize: 11,),
-              labelPadding: EdgeInsets.symmetric(horizontal: 2, vertical: 0), // تقليل المسافات
+              labelStyle: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ), // تصغير الخط
+              unselectedLabelStyle: TextStyle(fontSize: 11),
+              labelPadding: EdgeInsets.symmetric(
+                horizontal: 2,
+                vertical: 0,
+              ), // تقليل المسافات
               labelColor: Colors.white,
               unselectedLabelColor: _primaryColor,
               tabs: [
@@ -2424,39 +2668,30 @@ void _shareReport(Map<String, dynamic> report) {
                   icon: Icon(Icons.report_problem, size: 18),
                   text: 'إبلاغ الكهرباء',
                 ),
-                Tab(
-                  icon: Icon(Icons.person, size: 18),
-                  text: 'إبلاغ الموظفين',
-                ),
+                Tab(icon: Icon(Icons.person, size: 18), text: 'إبلاغ الموظفين'),
                 Tab(
                   icon: Icon(Icons.phone_iphone, size: 18),
                   text: 'مشاكل التطبيق',
                 ),
-                Tab( // أضف هذا التبويب الجديد
-                   
+                Tab(
+                  // أضف هذا التبويب الجديد
                   icon: Icon(Icons.emergency, size: 18),
                   text: 'أمر طارئ',
                 ),
-                Tab(
-                  icon: Icon(Icons.summarize, size: 18),
-                  text: 'التقارير',
-                ),
+                Tab(icon: Icon(Icons.summarize, size: 18), text: 'التقارير'),
               ],
             ),
           ),
         ),
       ),
-      
+
       drawer: _buildGovernmentDrawer(context),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              _lightColor,
-              Colors.white,
-            ],
+            colors: [_lightColor, Colors.white],
           ),
         ),
         child: Column(
@@ -2479,668 +2714,673 @@ void _shareReport(Map<String, dynamic> report) {
       ),
     );
   }
+
   Widget _buildEmergencyReportSection() {
-  return Column(
-    children: [
-      Container(
-        padding: EdgeInsets.zero,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
-          border: Border.all(color: Colors.grey[200]!),
-        ),
-        child: TabBar(
-          controller: _emergencyTabController,
-          isScrollable: true,
-          indicator: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_dangerColor, Colors.red],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          indicatorColor: Colors.transparent,
-          labelColor: Colors.white,
-          unselectedLabelColor: _dangerColor,
-          labelStyle: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-          unselectedLabelStyle: TextStyle(
-            fontSize: 11,
-          ),
+    return Column(
+      children: [
+        Container(
           padding: EdgeInsets.zero,
-          labelPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          indicatorPadding: EdgeInsets.zero,
-          tabAlignment: TabAlignment.start,
-          tabs: [
-            Tab(text: 'حوادث كهربائية'),
-            Tab(text: 'حرائق'),
-            Tab(text: 'أخرى'),
-          ],
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: TabBar(
+            controller: _emergencyTabController,
+            isScrollable: true,
+            indicator: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [_dangerColor, Colors.red],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            indicatorColor: Colors.transparent,
+            labelColor: Colors.white,
+            unselectedLabelColor: _dangerColor,
+            labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            unselectedLabelStyle: TextStyle(fontSize: 11),
+            padding: EdgeInsets.zero,
+            labelPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            indicatorPadding: EdgeInsets.zero,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              Tab(text: 'حوادث كهربائية'),
+              Tab(text: 'حرائق'),
+              Tab(text: 'أخرى'),
+            ],
+          ),
         ),
-      ),
-      Expanded(
-        child: TabBarView(
-          controller: _emergencyTabController,
-          children: [
-            _buildElectricalAccidentsContent(),
-            _buildFireEmergenciesContent(),
-            _buildOtherEmergenciesContent(),
-          ],
+        Expanded(
+          child: TabBarView(
+            controller: _emergencyTabController,
+            children: [
+              _buildElectricalAccidentsContent(),
+              _buildFireEmergenciesContent(),
+              _buildOtherEmergenciesContent(),
+            ],
+          ),
         ),
-      ),
-    ],
-  );
-}
-Widget _buildElectricalAccidentsContent() {
-  final filteredProblems = _emergencyReports.where((problem) => 
-      problem.emergencyType.contains('كهربائي')).toList();
-  final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'emergency');
-  
-  return _buildEmergencyContentTemplate(
-    title: 'بلاغات الحوادث الكهربائية',
-    icon: Icons.electrical_services,
-    color: _dangerColor,
-    problems: filteredByReadStatus,
-  );
-}
+      ],
+    );
+  }
 
-Widget _buildFireEmergenciesContent() {
-  final filteredProblems = _emergencyReports.where((problem) => 
-      problem.emergencyType.contains('حريق')).toList();
-  final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'emergency');
-  
-  return _buildEmergencyContentTemplate(
-    title: 'بلاغات الحرائق الكهربائية',
-    icon: Icons.local_fire_department,
-    color: Colors.red,
-    problems: filteredByReadStatus,
-  );
-}
+  Widget _buildElectricalAccidentsContent() {
+    final filteredProblems = _emergencyReports
+        .where((problem) => problem.emergencyType.contains('كهربائي'))
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'emergency',
+    );
 
-Widget _buildOtherEmergenciesContent() {
-  final filteredProblems = _emergencyReports.where((problem) => 
-      !problem.emergencyType.contains('كهربائي') && 
-      !problem.emergencyType.contains('حريق')).toList();
-  final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'emergency');
-  
-  return _buildEmergencyContentTemplate(
-    title: 'بلاغات طارئة أخرى',
-    icon: Icons.warning,
-    color: Colors.orange,
-    problems: filteredByReadStatus,
-  );
-}
+    return _buildEmergencyContentTemplate(
+      title: 'بلاغات الحوادث الكهربائية',
+      icon: Icons.electrical_services,
+      color: _dangerColor,
+      problems: filteredByReadStatus,
+    );
+  }
 
-Widget _buildEmergencyContentTemplate({
-  required String title,
-  required IconData icon,
-  required Color color,
-  required List<dynamic> problems,
-}) {
-  return Column(
-    children: [
-      Container(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+  Widget _buildFireEmergenciesContent() {
+    final filteredProblems = _emergencyReports
+        .where((problem) => problem.emergencyType.contains('حريق'))
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'emergency',
+    );
+
+    return _buildEmergencyContentTemplate(
+      title: 'بلاغات الحرائق الكهربائية',
+      icon: Icons.local_fire_department,
+      color: Colors.red,
+      problems: filteredByReadStatus,
+    );
+  }
+
+  Widget _buildOtherEmergenciesContent() {
+    final filteredProblems = _emergencyReports
+        .where(
+          (problem) =>
+              !problem.emergencyType.contains('كهربائي') &&
+              !problem.emergencyType.contains('حريق'),
+        )
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'emergency',
+    );
+
+    return _buildEmergencyContentTemplate(
+      title: 'بلاغات طارئة أخرى',
+      icon: Icons.warning,
+      color: Colors.orange,
+      problems: filteredByReadStatus,
+    );
+  }
+
+  Widget _buildEmergencyContentTemplate({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required List<dynamic> problems,
+  }) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: color, size: 24),
                   ),
-                  child: Icon(icon, color: color, size: 24),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                        Text(
+                          'وزارة الكهرباء - الطوارئ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
                     children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: color,
+                      Chip(
+                        label: Text(
+                          '${problems.where((p) => !p.isRead).length}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                        backgroundColor: color,
+                        padding: EdgeInsets.symmetric(horizontal: 12),
                       ),
-                      Text(
-                        'وزارة الكهرباء - الطوارئ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                      SizedBox(width: 4),
+                      Chip(
+                        label: Text(
+                          'غير مقروء',
+                          style: TextStyle(color: Colors.white, fontSize: 10),
                         ),
+                        backgroundColor: color.withOpacity(0.8),
                       ),
                     ],
                   ),
-                ),
-                Row(
-                  children: [
-                    Chip(
-                      label: Text(
-                        '${problems.where((p) => !p.isRead).length}',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      backgroundColor: color,
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    SizedBox(width: 4),
-                    Chip(
-                      label: Text(
-                        'غير مقروء',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                        ),
-                      ),
-                      backgroundColor: color.withOpacity(0.8),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: TabBar(
-                controller: _emergencySubTabController,
-                indicator: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.grey[600],
-                labelStyle: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-                tabs: [
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('غير مقروءة'),
-                        SizedBox(width: 4),
-                        Container(
-                          padding: EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${problems.where((p) => !p.isRead).length}',
-                            style: TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('مقروءة'),
-                        SizedBox(width: 4),
-                        Container(
-                          padding: EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${problems.where((p) => p.isRead).length}',
-                            style: TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
-            ),
-            SizedBox(height: 8),
-          ],
-        ),
-      ),
-      Expanded(
-        child: problems.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
-                    SizedBox(height: 16),
-                    Text(
-                      _subTabStatus['emergency'] == 'غير مقروءة'
-                          ? 'لا توجد بلاغات طارئة غير مقروءة'
-                          : 'لا توجد بلاغات طارئة مقروءة',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
+              SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: TabBar(
+                  controller: _emergencySubTabController,
+                  indicator: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.grey[600],
+                  labelStyle: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('غير مقروءة'),
+                          SizedBox(width: 4),
+                          Container(
+                            padding: EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${problems.where((p) => !p.isRead).length}',
+                              style: TextStyle(fontSize: 10),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      _subTabStatus['emergency'] == 'غير مقروءة'
-                          ? 'جميع البلاغات الطارئة تمت قراءتها'
-                          : 'لم تتم قراءة أي بلاغ طارئ بعد',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('مقروءة'),
+                          SizedBox(width: 4),
+                          Container(
+                            padding: EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${problems.where((p) => p.isRead).length}',
+                              style: TextStyle(fontSize: 10),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              )
-            : ListView.builder(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                itemCount: problems.length,
-                itemBuilder: (context, index) {
-                  final problem = problems[index];
-                  return _buildEmergencyProblemCard(
-                    problem,
-                    color,
-                    () {
+              ),
+              SizedBox(height: 8),
+            ],
+          ),
+        ),
+        Expanded(
+          child: problems.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
+                      SizedBox(height: 16),
+                      Text(
+                        _subTabStatus['emergency'] == 'غير مقروءة'
+                            ? 'لا توجد بلاغات طارئة غير مقروءة'
+                            : 'لا توجد بلاغات طارئة مقروءة',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        _subTabStatus['emergency'] == 'غير مقروءة'
+                            ? 'جميع البلاغات الطارئة تمت قراءتها'
+                            : 'لم تتم قراءة أي بلاغ طارئ بعد',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: problems.length,
+                  itemBuilder: (context, index) {
+                    final problem = problems[index];
+                    return _buildEmergencyProblemCard(problem, color, () {
                       _markAsRead(problem);
                       _showEmergencyDetails(problem);
-                    },
-                  );
-                },
-              ),
-      ),
-    ],
-  );
-}
-Widget _buildEmergencyProblemCard(EmergencyReport problem, Color color, VoidCallback onTap) {
-  return Card(
-    margin: EdgeInsets.only(bottom: 12, left: 4, right: 4),
-    elevation: problem.isRead ? 1 : 3,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-      side: BorderSide(
-        color: problem.isRead ? Colors.grey[200]! : color.withOpacity(0.3),
-        width: problem.isRead ? 1 : 2,
-      ),
-    ),
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // رأس البطاقة
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(problem.isRead ? 0.05 : 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: color.withOpacity(problem.isRead ? 0.1 : 0.3),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.emergency,
-                    color: color,
-                    size: 22,
-                  ),
+                    });
+                  },
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        problem.customerName,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: problem.isRead ? FontWeight.normal : FontWeight.bold,
-                          color: problem.isRead ? Colors.grey[700] : color,
-                        ),
-                      ),
-                      Text(
-                        problem.area,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: problem.isRead ? Colors.grey[500] : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: _getEmergencyStatusColor(problem.status).withOpacity(problem.isRead ? 0.05 : 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: _getEmergencyStatusColor(problem.status).withOpacity(problem.isRead ? 0.2 : 0.3)
-                    ),
-                  ),
-                  child: Text(
-                    problem.status,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: problem.isRead ? FontWeight.normal : FontWeight.bold,
-                      color: _getEmergencyStatusColor(problem.status),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        ),
+      ],
+    );
+  }
 
-            SizedBox(height: 12),
-
-            // شدة الحالة
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _getSeverityColor(problem.severity).withOpacity(problem.isRead ? 0.05 : 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+  Widget _buildEmergencyProblemCard(
+    EmergencyReport problem,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 12, left: 4, right: 4),
+      elevation: problem.isRead ? 1 : 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: problem.isRead ? Colors.grey[200]! : color.withOpacity(0.3),
+          width: problem.isRead ? 1 : 2,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // رأس البطاقة
+              Row(
                 children: [
-                  Icon(
-                    Icons.warning,
-                    size: 12,
-                    color: _getSeverityColor(problem.severity),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(problem.isRead ? 0.05 : 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: color.withOpacity(problem.isRead ? 0.1 : 0.3),
+                      ),
+                    ),
+                    child: Icon(Icons.emergency, color: color, size: 22),
                   ),
-                  SizedBox(width: 4),
-                  Text(
-                    'شدة الحالة: ${problem.severity}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: _getSeverityColor(problem.severity),
-                      fontWeight: problem.isRead ? FontWeight.normal : FontWeight.bold,
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          problem.customerName,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: problem.isRead
+                                ? FontWeight.normal
+                                : FontWeight.bold,
+                            color: problem.isRead ? Colors.grey[700] : color,
+                          ),
+                        ),
+                        Text(
+                          problem.area,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: problem.isRead
+                                ? Colors.grey[500]
+                                : Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: _getEmergencyStatusColor(
+                        problem.status,
+                      ).withOpacity(problem.isRead ? 0.05 : 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: _getEmergencyStatusColor(
+                          problem.status,
+                        ).withOpacity(problem.isRead ? 0.2 : 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      problem.status,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: problem.isRead
+                            ? FontWeight.normal
+                            : FontWeight.bold,
+                        color: _getEmergencyStatusColor(problem.status),
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
 
-            SizedBox(height: 8),
+              SizedBox(height: 12),
 
-            // نوع الطارئ
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: color.withOpacity(problem.isRead ? 0.05 : 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                problem.emergencyType,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: problem.isRead ? color.withOpacity(0.8) : color,
-                  fontWeight: problem.isRead ? FontWeight.normal : FontWeight.bold,
+              // شدة الحالة
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getSeverityColor(
+                    problem.severity,
+                  ).withOpacity(problem.isRead ? 0.05 : 0.1),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-              ),
-            ),
-
-            SizedBox(height: 8),
-
-            // معلومات إضافية
-            Row(
-              children: [
-                if (problem.injuredCount > 0)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    margin: EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(problem.isRead ? 0.05 : 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.personal_injury, size: 12, color: Colors.red),
-                        SizedBox(width: 4),
-                        Text(
-                          '${problem.injuredCount} مصاب',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                
-                if (problem.firePresent)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    margin: EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(problem.isRead ? 0.05 : 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.local_fire_department, size: 12, color: Colors.orange),
-                        SizedBox(width: 4),
-                        Text(
-                          'حريق',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.orange,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                
-                if (problem.roadClosed)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(problem.isRead ? 0.05 : 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.no_crash, size: 12, color: Colors.blue),
-                        SizedBox(width: 4),
-                        Text(
-                          'طريق مغلق',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-
-            SizedBox(height: 12),
-
-            // الموقع والتاريخ
-            Row(
-              children: [
-                Icon(Icons.location_on, size: 14, color: Colors.grey),
-                SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    problem.location,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: problem.isRead ? Colors.grey[500] : Colors.grey[700],
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            
-            SizedBox(height: 4),
-            
-            Row(
-              children: [
-                Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                SizedBox(width: 4),
-                Text(
-                  problem.date,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: problem.isRead ? Colors.grey[500] : Colors.grey[700],
-                  ),
-                ),
-                SizedBox(width: 16),
-                Icon(Icons.access_time, size: 14, color: Colors.grey),
-                SizedBox(width: 4),
-                Text(
-                  problem.time,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: problem.isRead ? Colors.grey[500] : Colors.grey[700],
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: 12),
-
-            // الوصف
-            Text(
-              problem.description.length > 120 
-                  ? '${problem.description.substring(0, 120)}...' 
-                  : problem.description,
-              style: TextStyle(
-                fontSize: 12,
-                color: problem.isRead ? Colors.grey[600] : Colors.grey[800],
-                height: 1.4,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-
-            SizedBox(height: 12),
-
-            // صورة البلاغ
-            Container(
-              height: 100,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.grey[100],
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.emergency_rounded,
-                      size: 32,
-                      color: Colors.grey[400],
+                      Icons.warning,
+                      size: 12,
+                      color: _getSeverityColor(problem.severity),
                     ),
-                    SizedBox(height: 4),
+                    SizedBox(width: 4),
                     Text(
-                      'صورة الطارئ',
+                      'شدة الحالة: ${problem.severity}',
                       style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey[500],
+                        fontSize: 11,
+                        color: _getSeverityColor(problem.severity),
+                        fontWeight: problem.isRead
+                            ? FontWeight.normal
+                            : FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
 
-            SizedBox(height: 12),
+              SizedBox(height: 8),
 
-            // الأزرار
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                InkWell(
-                  onTap: () => _forwardToCivilDefense(problem),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(problem.isRead ? 0.05 : 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.red.withOpacity(problem.isRead ? 0.2 : 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.local_police,
-                          size: 14,
-                          color: Colors.red,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'إرسال للدفاع المدني',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+              // نوع الطارئ
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(problem.isRead ? 0.05 : 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  problem.emergencyType,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: problem.isRead ? color.withOpacity(0.8) : color,
+                    fontWeight: problem.isRead
+                        ? FontWeight.normal
+                        : FontWeight.bold,
                   ),
                 ),
-                SizedBox(width: 8),
-                if (!problem.isRead)
-                  InkWell(
-                    onTap: () => _markAsRead(problem),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              ),
+
+              SizedBox(height: 8),
+
+              // معلومات إضافية
+              Row(
+                children: [
+                  if (problem.injuredCount > 0)
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                        color: _successColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _successColor.withOpacity(0.3)),
+                        color: Colors.red.withOpacity(
+                          problem.isRead ? 0.05 : 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.mark_email_read,
-                            size: 14,
-                            color: _successColor,
+                            Icons.personal_injury,
+                            size: 12,
+                            color: Colors.red,
                           ),
                           SizedBox(width: 4),
                           Text(
-                            'تحديد كمقروء',
+                            '${problem.injuredCount} مصاب',
                             style: TextStyle(
                               fontSize: 10,
-                              color: _successColor,
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  if (problem.firePresent)
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(
+                          problem.isRead ? 0.05 : 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.local_fire_department,
+                            size: 12,
+                            color: Colors.orange,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'حريق',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  if (problem.roadClosed)
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(
+                          problem.isRead ? 0.05 : 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.no_crash, size: 12, color: Colors.blue),
+                          SizedBox(width: 4),
+                          Text(
+                            'طريق مغلق',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+
+              SizedBox(height: 12),
+
+              // الموقع والتاريخ
+              Row(
+                children: [
+                  Icon(Icons.location_on, size: 14, color: Colors.grey),
+                  SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      problem.location,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: problem.isRead
+                            ? Colors.grey[500]
+                            : Colors.grey[700],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 4),
+
+              Row(
+                children: [
+                  Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                  SizedBox(width: 4),
+                  Text(
+                    problem.date,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: problem.isRead
+                          ? Colors.grey[500]
+                          : Colors.grey[700],
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Icon(Icons.access_time, size: 14, color: Colors.grey),
+                  SizedBox(width: 4),
+                  Text(
+                    problem.time,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: problem.isRead
+                          ? Colors.grey[500]
+                          : Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 12),
+
+              // الوصف
+              Text(
+                problem.description.length > 120
+                    ? '${problem.description.substring(0, 120)}...'
+                    : problem.description,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: problem.isRead ? Colors.grey[600] : Colors.grey[800],
+                  height: 1.4,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              SizedBox(height: 12),
+
+              // صورة البلاغ
+              Container(
+                height: 100,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey[100],
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.emergency_rounded,
+                        size: 32,
+                        color: Colors.grey[400],
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'صورة الطارئ',
+                        style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 12),
+
+              // الأزرار
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  InkWell(
+                    onTap: () => _forwardToCivilDefense(problem),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(
+                          problem.isRead ? 0.05 : 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.red.withOpacity(
+                            problem.isRead ? 0.2 : 0.3,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.local_police, size: 14, color: Colors.red),
+                          SizedBox(width: 4),
+                          Text(
+                            'إرسال للدفاع المدني',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.red,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -3148,747 +3388,818 @@ Widget _buildEmergencyProblemCard(EmergencyReport problem, Color color, VoidCall
                       ),
                     ),
                   ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-Color _getEmergencyStatusColor(String status) {
-  switch (status) {
-    case 'لم يتم المعالجة':
-      return Colors.red;
-    case 'قيد المعالجة':
-      return Colors.orange;
-    case 'تم المعالجة':
-      return Colors.green;
-    default:
-      return Colors.grey;
-  }
-}
-
-Color _getSeverityColor(String severity) {
-  switch (severity) {
-    case 'حرجة':
-      return Colors.red;
-    case 'عالية':
-      return Colors.orange;
-    case 'متوسطة':
-      return Colors.yellow[700]!;
-    case 'منخفضة':
-      return Colors.green;
-    default:
-      return Colors.grey;
-  }
-}
-
-void _forwardToCivilDefense(EmergencyReport emergency) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.red, width: 1),
-      ),
-      title: Container(
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.local_police, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              'إرسال للدفاع المدني',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+                  SizedBox(width: 8),
+                  if (!problem.isRead)
+                    InkWell(
+                      onTap: () => _markAsRead(problem),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _successColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _successColor.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.mark_email_read,
+                              size: 14,
+                              color: _successColor,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'تحديد كمقروء',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: _successColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-          ],
-        ),
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('سيتم إرسال هذا البلاغ الطارئ إلى:'),
-            SizedBox(height: 16),
-            Card(
-              elevation: 2,
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Colors.red,
-                  child: Icon(Icons.local_police, color: Colors.white, size: 20),
-                ),
-                title: Text(
-                  'الدفاع المدني - غرفة الطوارئ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-                subtitle: Text(
-                  'رقم الطوارئ: 115',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 8),
-            Card(
-              elevation: 2,
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Colors.blue,
-                  child: Icon(Icons.local_hospital, color: Colors.white, size: 20),
-                ),
-                title: Text(
-                  'الإسعاف',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                ),
-                subtitle: Text(
-                  'رقم الطوارئ: 122',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
-            Text('هل تريد إرسال البلاغ الطارئ؟'),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('إلغاء'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            _showEmergencyForwardedMessage();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
+            ],
           ),
-          child: Text('إرسال فوري'),
         ),
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
-void _showEmergencyForwardedMessage() {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Container(
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.red.withOpacity(0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
+  Color _getEmergencyStatusColor(String status) {
+    switch (status) {
+      case 'لم يتم المعالجة':
+        return Colors.red;
+      case 'قيد المعالجة':
+        return Colors.orange;
+      case 'تم المعالجة':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _getSeverityColor(String severity) {
+    switch (severity) {
+      case 'حرجة':
+        return Colors.red;
+      case 'عالية':
+        return Colors.orange;
+      case 'متوسطة':
+        return Colors.yellow[700]!;
+      case 'منخفضة':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  void _forwardToCivilDefense(EmergencyReport emergency) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.red, width: 1),
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                shape: BoxShape.circle,
+        title: Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.local_police, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
+                'إرسال للدفاع المدني',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-              child: Icon(Icons.local_police, color: Colors.red, size: 20),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'تم إرسال البلاغ للدفاع المدني',
+            ],
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('سيتم إرسال هذا البلاغ الطارئ إلى:'),
+              SizedBox(height: 16),
+              Card(
+                elevation: 2,
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.red,
+                    child: Icon(
+                      Icons.local_police,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    'الدفاع المدني - غرفة الطوارئ',
                     style: TextStyle(
-                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Colors.red,
                     ),
                   ),
-                  Text(
-                    'سيتم التعامل مع الحالة فوراً',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
+                  subtitle: Text(
+                    'رقم الطوارئ: 115',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ),
+              ),
+              SizedBox(height: 8),
+              Card(
+                elevation: 2,
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    child: Icon(
+                      Icons.local_hospital,
+                      color: Colors.white,
+                      size: 20,
                     ),
                   ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      behavior: SnackBarBehavior.floating,
-      duration: Duration(seconds: 4),
-    ),
-  );
-}
-void _showEmergencyDetails(EmergencyReport emergency) {
-
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.red, width: 2),
-      ),
-      title: Container(
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.emergency_rounded, color: Colors.white, size: 24),
-            SizedBox(width: 8),
-            Text(
-              'بلاغ طارئ - ${emergency.emergencyType}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // صورة البلاغ
-            Container(
-              height: 200,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.emergency_rounded,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'صورة الحادثة',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 14,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'تم رفعها بواسطة الشاهد',
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            SizedBox(height: 16),
-            
-            // معلومات الطارئ
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withOpacity(0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildEmergencyDetailRow('👤 الشاهد:', emergency.customerName),
-                  _buildEmergencyDetailRow('🚨 نوع الطارئ:', emergency.emergencyType),
-                  _buildEmergencyDetailRow('📍 موقع الحادثة:', emergency.accidentLocation),
-                  _buildEmergencyDetailRow('🏘️ المنطقة:', emergency.area),
-                  _buildEmergencyDetailRow('📅 التاريخ:', emergency.date),
-                  _buildEmergencyDetailRow('⏰ الوقت:', emergency.time),
-                  _buildEmergencyDetailRow('⚡ الشدة:', emergency.severity),
-                  _buildEmergencyDetailRow('📌 الحالة:', emergency.status),
-                  _buildEmergencyDetailRow('🚑 الإصابات:', '${emergency.injuredCount} مصاب'),
-                  _buildEmergencyDetailRow('🔥 حريق:', emergency.firePresent ? 'نعم' : 'لا'),
-                  _buildEmergencyDetailRow('🚧 طريق مغلق:', emergency.roadClosed ? 'نعم' : 'لا'),
-                ],
-              ),
-            ),
-            
-            SizedBox(height: 16),
-            
-            // وصف الحادثة
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.withOpacity(0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '📝 وصف الحادثة:',
+                  title: Text(
+                    'الإسعاف',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange[800],
+                      color: Colors.blue,
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    emergency.description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[800],
-                      height: 1.5,
-                    ),
+                  subtitle: Text(
+                    'رقم الطوارئ: 122',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
-                ],
+                ),
               ),
-            ),
-            
-            SizedBox(height: 16),
-            
-            // إجراءات الطوارئ
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.withOpacity(0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '🚨 إجراءات الطوارئ المتخذة:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[800],
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text('• تم إخلاء المنطقة من المدنيين', style: TextStyle(fontSize: 11)),
-                  Text('• تم فصل التيار الكهربائي عن المنطقة', style: TextStyle(fontSize: 11)),
-                  Text('• تم إبلاغ الدفاع المدني (115)', style: TextStyle(fontSize: 11)),
-                  Text('• تم إبلاغ الإسعاف (122)', style: TextStyle(fontSize: 11)),
-                  Text('• تم تنبيه أقسام الشرطة المجاورة', style: TextStyle(fontSize: 11)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        OutlinedButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('إغلاق'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            _forwardToCivilDefense(emergency);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-          ),
-          child: Text('إرسال للدفاع المدني'),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildEmergencyDetailRow(String label, String value) {
-  return Padding(
-    padding: EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.bold,
-            ),
+              SizedBox(height: 16),
+              Text('هل تريد إرسال البلاغ الطارئ؟'),
+            ],
           ),
         ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[800],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showEmergencyForwardedMessage();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
+            child: Text('إرسال فوري'),
           ),
-        ),
-      ],
-    ),
-  );
-}
-  Widget _buildElectricityReportSection() {
-  return Column(
-    children: [
-      Container(
-        padding: EdgeInsets.zero,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
-          border: Border.all(color: Colors.grey[200]!),
-        ),
-        child: TabBar(
-          controller: _electricityTabController,
-          isScrollable: true,
-          indicator: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_dangerColor, Color(0xFFFF7043)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          indicatorColor: Colors.transparent,
-          labelColor: Colors.white,
-          unselectedLabelColor: _dangerColor,
-          labelStyle: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-          unselectedLabelStyle: TextStyle(
-            fontSize: 11,
-          ),
-          padding: EdgeInsets.zero,
-          labelPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          indicatorPadding: EdgeInsets.zero,
-          tabAlignment: TabAlignment.start,
-          tabs: [
-            Tab(text: 'انقطاع التيار الكهربائي'),
-            Tab(text: 'مشكلة في الفولطية'),
-            Tab(text: 'مشكلة في العدادات'),
-            Tab(text: 'أخرى'),
-          ],
-        ),
-      ),
-      Expanded(
-        child: TabBarView(
-          controller: _electricityTabController,
-          children: [
-            _buildElectricityOutageContent(),
-            _buildElectricityVoltageContent(),
-            _buildElectricityMeterContent(),
-            _buildElectricityOtherContent(),
-          ],
-        ),
-      ),
-    ],
-  );
-}
-
-Widget _buildElectricityOutageContent() {
-  final filteredProblems = _electricityProblems.where((problem) => problem.problemCategory == 'انقطاع التيار الكهربائي').toList();
-  final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'electricity');
-  
-  return _buildElectricityContentTemplate(
-    title: 'بلاغات انقطاع التيار الكهربائي',
-    icon: Icons.power_off,
-    color: _dangerColor,
-    problems: filteredByReadStatus,
-  );
-}
-
-Widget _buildElectricityVoltageContent() {
-  final filteredProblems = _electricityProblems.where((problem) => problem.problemCategory == 'مشكلة في الفولطية').toList();
-  final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'electricity');
-  
-  return _buildElectricityContentTemplate(
-    title: 'بلاغات مشاكل الفولطية',
-    icon: Icons.bolt,
-    color: _warningColor,
-    problems: filteredByReadStatus,
-  );
-}
-
-Widget _buildElectricityMeterContent() {
-  final filteredProblems = _electricityProblems.where((problem) => problem.problemCategory == 'مشكلة في العدادات').toList();
-  final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'electricity');
-  
-  return _buildElectricityContentTemplate(
-    title: 'بلاغات مشاكل العدادات',
-    icon: Icons.speed,
-    color: _infoColor,
-    problems: filteredByReadStatus,
-  );
-}
-// دالة لعرض تفاصيل الإشعار
-  void _showNotificationsScreen(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => NotificationsScreen(),
+        ],
       ),
     );
   }
-Widget _buildElectricityOtherContent() {
-  final filteredProblems = _electricityProblems.where((problem) => problem.problemCategory == 'أخرى').toList();
-  final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'electricity');
-  
-  return _buildElectricityContentTemplate(
-    title: 'بلاغات أخرى للكهرباء',
-    icon: Icons.warning,
-    color: _darkColor,
-    problems: filteredByReadStatus,
-  );
-}
 
-Widget _buildElectricityContentTemplate({
-  required String title,
-  required IconData icon,
-  required Color color,
-  required List<dynamic> problems,
-}) {
-  return Column(
-    children: [
-      Container(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: color, size: 24),
+  void _showEmergencyForwardedMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red.withOpacity(0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                        ),
-                      ),
-                      Text(
-                        'وزارة الكهرباء - إدارة الخدمات',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
+                child: Icon(Icons.local_police, color: Colors.red, size: 20),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Chip(
-                      label: Text(
-                        '${problems.where((p) => !p.isRead).length}',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    Text(
+                      'تم إرسال البلاغ للدفاع المدني',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
                       ),
-                      backgroundColor: color,
-                      padding: EdgeInsets.symmetric(horizontal: 12),
                     ),
-                    SizedBox(width: 4),
-                    Chip(
-                      label: Text(
-                        'غير مقروء',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                        ),
-                      ),
-                      backgroundColor: color.withOpacity(0.8),
+                    Text(
+                      'سيتم التعامل مع الحالة فوراً',
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     ),
                   ],
                 ),
-              ],
-            ),
-            SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey[200]!),
               ),
-              child: TabBar(
-                controller: _electricitySubTabController,
-                indicator: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.grey[600],
-                labelStyle: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-                tabs: [
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('غير مقروءة'),
-                        SizedBox(width: 4),
-                        Container(
-                          padding: EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${problems.where((p) => !p.isRead).length}',
-                            style: TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('مقروءة'),
-                        SizedBox(width: 4),
-                        Container(
-                          padding: EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${problems.where((p) => p.isRead).length}',
-                            style: TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 8),
-          ],
+            ],
+          ),
         ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 4),
       ),
-      Expanded(
-        child: problems.isEmpty
-            ? Center(
+    );
+  }
+
+  void _showEmergencyDetails(EmergencyReport emergency) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.red, width: 2),
+        ),
+        title: Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.emergency_rounded, color: Colors.white, size: 24),
+              SizedBox(width: 8),
+              Text(
+                'بلاغ طارئ - ${emergency.emergencyType}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // صورة البلاغ
+              Container(
+                height: 200,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
-                    SizedBox(height: 16),
+                    Icon(
+                      Icons.emergency_rounded,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    SizedBox(height: 8),
                     Text(
-                      _subTabStatus['electricity'] == 'غير مقروءة'
-                          ? 'لا توجد بلاغات غير مقروءة'
-                          : 'لا توجد بلاغات مقروءة',
+                      'صورة الحادثة',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'تم رفعها بواسطة الشاهد',
+                      style: TextStyle(color: Colors.grey[400], fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 16),
+
+              // معلومات الطارئ
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildEmergencyDetailRow(
+                      '👤 الشاهد:',
+                      emergency.customerName,
+                    ),
+                    _buildEmergencyDetailRow(
+                      '🚨 نوع الطارئ:',
+                      emergency.emergencyType,
+                    ),
+                    _buildEmergencyDetailRow(
+                      '📍 موقع الحادثة:',
+                      emergency.accidentLocation,
+                    ),
+                    _buildEmergencyDetailRow('🏘️ المنطقة:', emergency.area),
+                    _buildEmergencyDetailRow('📅 التاريخ:', emergency.date),
+                    _buildEmergencyDetailRow('⏰ الوقت:', emergency.time),
+                    _buildEmergencyDetailRow('⚡ الشدة:', emergency.severity),
+                    _buildEmergencyDetailRow('📌 الحالة:', emergency.status),
+                    _buildEmergencyDetailRow(
+                      '🚑 الإصابات:',
+                      '${emergency.injuredCount} مصاب',
+                    ),
+                    _buildEmergencyDetailRow(
+                      '🔥 حريق:',
+                      emergency.firePresent ? 'نعم' : 'لا',
+                    ),
+                    _buildEmergencyDetailRow(
+                      '🚧 طريق مغلق:',
+                      emergency.roadClosed ? 'نعم' : 'لا',
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 16),
+
+              // وصف الحادثة
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '📝 وصف الحادثة:',
                       style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange[800],
                       ),
                     ),
                     SizedBox(height: 8),
                     Text(
-                      _subTabStatus['electricity'] == 'غير مقروءة'
-                          ? 'جميع البلاغات تمت قراءتها'
-                          : 'لم تتم قراءة أي بلاغ بعد',
+                      emergency.description,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[500],
+                        color: Colors.grey[800],
+                        height: 1.5,
                       ),
                     ),
                   ],
                 ),
-              )
-            : ListView.builder(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                itemCount: problems.length,
-                itemBuilder: (context, index) {
-                  final problem = problems[index];
-                  return _buildGenericProblemCard(
-                    problem,
-                    color,
-                    Icons.person_outline,
-                    problem.customerName,
-                    problem.substation,
-                    () {
-                      _markAsRead(problem);
-                      _showProblemDetails(problem);
-                    },
-                    onShare: () => _showShareDialog(problem),
-                    showPriority: true,
-                    priority: problem.priority,
-                    isRead: problem.isRead,
-                    showCategory: true,
-                    category: problem.problemCategory,
-                  );
-                },
               ),
+
+              SizedBox(height: 16),
+
+              // إجراءات الطوارئ
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '🚨 إجراءات الطوارئ المتخذة:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[800],
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      '• تم إخلاء المنطقة من المدنيين',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                    Text(
+                      '• تم فصل التيار الكهربائي عن المنطقة',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                    Text(
+                      '• تم إبلاغ الدفاع المدني (115)',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                    Text(
+                      '• تم إبلاغ الإسعاف (122)',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                    Text(
+                      '• تم تنبيه أقسام الشرطة المجاورة',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('إغلاق'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _forwardToCivilDefense(emergency);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('إرسال للدفاع المدني'),
+          ),
+        ],
       ),
-    ],
-  );
-}
+    );
+  }
+
+  Widget _buildEmergencyDetailRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: TextStyle(fontSize: 11, color: Colors.grey[800]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildElectricityReportSection() {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.zero,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: TabBar(
+            controller: _electricityTabController,
+            isScrollable: true,
+            indicator: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [_dangerColor, Color(0xFFFF7043)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            indicatorColor: Colors.transparent,
+            labelColor: Colors.white,
+            unselectedLabelColor: _dangerColor,
+            labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            unselectedLabelStyle: TextStyle(fontSize: 11),
+            padding: EdgeInsets.zero,
+            labelPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            indicatorPadding: EdgeInsets.zero,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              Tab(text: 'انقطاع التيار الكهربائي'),
+              Tab(text: 'مشكلة في الفولطية'),
+              Tab(text: 'مشكلة في العدادات'),
+              Tab(text: 'أخرى'),
+            ],
+          ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _electricityTabController,
+            children: [
+              _buildElectricityOutageContent(),
+              _buildElectricityVoltageContent(),
+              _buildElectricityMeterContent(),
+              _buildElectricityOtherContent(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildElectricityOutageContent() {
+    final filteredProblems = _electricityProblems
+        .where(
+          (problem) => problem.problemCategory == 'انقطاع التيار الكهربائي',
+        )
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'electricity',
+    );
+
+    return _buildElectricityContentTemplate(
+      title: 'بلاغات انقطاع التيار الكهربائي',
+      icon: Icons.power_off,
+      color: _dangerColor,
+      problems: filteredByReadStatus,
+    );
+  }
+
+  Widget _buildElectricityVoltageContent() {
+    final filteredProblems = _electricityProblems
+        .where((problem) => problem.problemCategory == 'مشكلة في الفولطية')
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'electricity',
+    );
+
+    return _buildElectricityContentTemplate(
+      title: 'بلاغات مشاكل الفولطية',
+      icon: Icons.bolt,
+      color: _warningColor,
+      problems: filteredByReadStatus,
+    );
+  }
+
+  Widget _buildElectricityMeterContent() {
+    final filteredProblems = _electricityProblems
+        .where((problem) => problem.problemCategory == 'مشكلة في العدادات')
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'electricity',
+    );
+
+    return _buildElectricityContentTemplate(
+      title: 'بلاغات مشاكل العدادات',
+      icon: Icons.speed,
+      color: _infoColor,
+      problems: filteredByReadStatus,
+    );
+  }
+
+  // دالة لعرض تفاصيل الإشعار
+  void _showNotificationsScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => NotificationsScreen()),
+    );
+  }
+
+  Widget _buildElectricityOtherContent() {
+    final filteredProblems = _electricityProblems
+        .where((problem) => problem.problemCategory == 'أخرى')
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'electricity',
+    );
+
+    return _buildElectricityContentTemplate(
+      title: 'بلاغات أخرى للكهرباء',
+      icon: Icons.warning,
+      color: _darkColor,
+      problems: filteredByReadStatus,
+    );
+  }
+
+  Widget _buildElectricityContentTemplate({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required List<dynamic> problems,
+  }) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: color, size: 24),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                        Text(
+                          'وزارة الكهرباء - إدارة الخدمات',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Chip(
+                        label: Text(
+                          '${problems.where((p) => !p.isRead).length}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        backgroundColor: color,
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      SizedBox(width: 4),
+                      Chip(
+                        label: Text(
+                          'غير مقروء',
+                          style: TextStyle(color: Colors.white, fontSize: 10),
+                        ),
+                        backgroundColor: color.withOpacity(0.8),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: TabBar(
+                  controller: _electricitySubTabController,
+                  indicator: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.grey[600],
+                  labelStyle: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('غير مقروءة'),
+                          SizedBox(width: 4),
+                          Container(
+                            padding: EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${problems.where((p) => !p.isRead).length}',
+                              style: TextStyle(fontSize: 10),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('مقروءة'),
+                          SizedBox(width: 4),
+                          Container(
+                            padding: EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${problems.where((p) => p.isRead).length}',
+                              style: TextStyle(fontSize: 10),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 8),
+            ],
+          ),
+        ),
+        Expanded(
+          child: problems.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
+                      SizedBox(height: 16),
+                      Text(
+                        _subTabStatus['electricity'] == 'غير مقروءة'
+                            ? 'لا توجد بلاغات غير مقروءة'
+                            : 'لا توجد بلاغات مقروءة',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        _subTabStatus['electricity'] == 'غير مقروءة'
+                            ? 'جميع البلاغات تمت قراءتها'
+                            : 'لم تتم قراءة أي بلاغ بعد',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: problems.length,
+                  itemBuilder: (context, index) {
+                    final problem = problems[index];
+                    return _buildGenericProblemCard(
+                      problem,
+                      color,
+                      Icons.person_outline,
+                      problem.customerName,
+                      problem.substation,
+                      () {
+                        _markAsRead(problem);
+                        _showProblemDetails(problem);
+                      },
+                      onShare: () => _showShareDialog(problem),
+                      showPriority: true,
+                      priority: problem.priority,
+                      isRead: problem.isRead,
+                      showCategory: true,
+                      category: problem.problemCategory,
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildEmployeeReportSection() {
     return Column(
@@ -3921,13 +4232,8 @@ Widget _buildElectricityContentTemplate({
             indicatorColor: Colors.transparent,
             labelColor: Colors.white,
             unselectedLabelColor: _infoColor,
-            labelStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-            unselectedLabelStyle: TextStyle(
-              fontSize: 11,
-            ),
+            labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            unselectedLabelStyle: TextStyle(fontSize: 11),
             padding: EdgeInsets.zero,
             labelPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             indicatorPadding: EdgeInsets.zero,
@@ -3954,9 +4260,14 @@ Widget _buildElectricityContentTemplate({
   }
 
   Widget _buildEmployeeMaintenanceContent() {
-    final filteredProblems = _employeeProblems.where((problem) => problem.problemType == 'موظف الصيانة').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'employee');
-    
+    final filteredProblems = _employeeProblems
+        .where((problem) => problem.problemType == 'موظف الصيانة')
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'employee',
+    );
+
     return Column(
       children: [
         Container(
@@ -3971,7 +4282,11 @@ Widget _buildElectricityContentTemplate({
                       color: _dangerColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.engineering, color: _dangerColor, size: 24),
+                    child: Icon(
+                      Icons.engineering,
+                      color: _dangerColor,
+                      size: 24,
+                    ),
                   ),
                   SizedBox(width: 12),
                   Expanded(
@@ -4014,10 +4329,7 @@ Widget _buildElectricityContentTemplate({
                       Chip(
                         label: Text(
                           'غير مقروء',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 10),
                         ),
                         backgroundColor: _dangerColor.withOpacity(0.8),
                       ),
@@ -4104,10 +4416,7 @@ Widget _buildElectricityContentTemplate({
                         _subTabStatus['employee'] == 'غير مقروءة'
                             ? 'لا توجد بلاغات غير مقروءة'
                             : 'لا توجد بلاغات مقروءة',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -4142,9 +4451,14 @@ Widget _buildElectricityContentTemplate({
   }
 
   Widget _buildEmployeeBillingContent() {
-    final filteredProblems = _employeeProblems.where((problem) => problem.problemType == 'موظف الفواتير').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'employee');
-    
+    final filteredProblems = _employeeProblems
+        .where((problem) => problem.problemType == 'موظف الفواتير')
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'employee',
+    );
+
     return Column(
       children: [
         Container(
@@ -4159,7 +4473,11 @@ Widget _buildElectricityContentTemplate({
                       color: _warningColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.receipt_long, color: _warningColor, size: 24),
+                    child: Icon(
+                      Icons.receipt_long,
+                      color: _warningColor,
+                      size: 24,
+                    ),
                   ),
                   SizedBox(width: 12),
                   Expanded(
@@ -4202,10 +4520,7 @@ Widget _buildElectricityContentTemplate({
                       Chip(
                         label: Text(
                           'غير مقروء',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 10),
                         ),
                         backgroundColor: _warningColor.withOpacity(0.8),
                       ),
@@ -4277,7 +4592,7 @@ Widget _buildElectricityContentTemplate({
                 ),
               ),
               SizedBox(height: 8),
-              ],
+            ],
           ),
         ),
         Expanded(
@@ -4292,10 +4607,7 @@ Widget _buildElectricityContentTemplate({
                         _subTabStatus['employee'] == 'غير مقروءة'
                             ? 'لا توجد بلاغات غير مقروءة'
                             : 'لا توجد بلاغات مقروءة',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -4330,9 +4642,14 @@ Widget _buildElectricityContentTemplate({
   }
 
   Widget _buildEmployeeOtherContent() {
-    final filteredProblems = _employeeProblems.where((problem) => problem.problemType == 'أخرى').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'employee');
-    
+    final filteredProblems = _employeeProblems
+        .where((problem) => problem.problemType == 'أخرى')
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'employee',
+    );
+
     return Column(
       children: [
         Container(
@@ -4390,10 +4707,7 @@ Widget _buildElectricityContentTemplate({
                       Chip(
                         label: Text(
                           'غير مقروء',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 10),
                         ),
                         backgroundColor: _infoColor.withOpacity(0.8),
                       ),
@@ -4465,7 +4779,6 @@ Widget _buildElectricityContentTemplate({
                 ),
               ),
               SizedBox(height: 8),
-              
             ],
           ),
         ),
@@ -4481,10 +4794,7 @@ Widget _buildElectricityContentTemplate({
                         _subTabStatus['employee'] == 'غير مقروءة'
                             ? 'لا توجد بلاغات غير مقروءة'
                             : 'لا توجد بلاغات مقروءة',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -4549,13 +4859,8 @@ Widget _buildElectricityContentTemplate({
             indicatorColor: Colors.transparent,
             labelColor: Colors.white,
             unselectedLabelColor: _primaryColor,
-            labelStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-            unselectedLabelStyle: TextStyle(
-              fontSize: 11,
-            ),
+            labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            unselectedLabelStyle: TextStyle(fontSize: 11),
             padding: EdgeInsets.zero,
             labelPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             indicatorPadding: EdgeInsets.zero,
@@ -4584,9 +4889,14 @@ Widget _buildElectricityContentTemplate({
   }
 
   Widget _buildAppCrashContent() {
-    final filteredProblems = _appProblems.where((problem) => problem.problemType == 'تعطل في التطبيق').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'app');
-    
+    final filteredProblems = _appProblems
+        .where((problem) => problem.problemType == 'تعطل في التطبيق')
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'app',
+    );
+
     return Column(
       children: [
         Container(
@@ -4601,7 +4911,11 @@ Widget _buildElectricityContentTemplate({
                       color: _dangerColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.error_outline, color: _dangerColor, size: 24),
+                    child: Icon(
+                      Icons.error_outline,
+                      color: _dangerColor,
+                      size: 24,
+                    ),
                   ),
                   SizedBox(width: 12),
                   Expanded(
@@ -4644,10 +4958,7 @@ Widget _buildElectricityContentTemplate({
                       Chip(
                         label: Text(
                           'غير مقروء',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 10),
                         ),
                         backgroundColor: _dangerColor.withOpacity(0.8),
                       ),
@@ -4719,7 +5030,6 @@ Widget _buildElectricityContentTemplate({
                 ),
               ),
               SizedBox(height: 8),
-              
             ],
           ),
         ),
@@ -4735,10 +5045,7 @@ Widget _buildElectricityContentTemplate({
                         _subTabStatus['app'] == 'غير مقروءة'
                             ? 'لا توجد بلاغات غير مقروءة'
                             : 'لا توجد بلاغات مقروءة',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -4773,9 +5080,14 @@ Widget _buildElectricityContentTemplate({
   }
 
   Widget _buildAppPaymentContent() {
-    final filteredProblems = _appProblems.where((problem) => problem.problemType == 'مشكلة في الدفع').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'app');
-    
+    final filteredProblems = _appProblems
+        .where((problem) => problem.problemType == 'مشكلة في الدفع')
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'app',
+    );
+
     return Column(
       children: [
         Container(
@@ -4833,10 +5145,7 @@ Widget _buildElectricityContentTemplate({
                       Chip(
                         label: Text(
                           'غير مقروء',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 10),
                         ),
                         backgroundColor: _warningColor.withOpacity(0.8),
                       ),
@@ -4923,10 +5232,7 @@ Widget _buildElectricityContentTemplate({
                         _subTabStatus['app'] == 'غير مقروءة'
                             ? 'لا توجد بلاغات غير مقروءة'
                             : 'لا توجد بلاغات مقروءة',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -4961,9 +5267,14 @@ Widget _buildElectricityContentTemplate({
   }
 
   Widget _buildAppUIUXContent() {
-    final filteredProblems = _appProblems.where((problem) => problem.problemType == 'واجهة المستخدم').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'app');
-    
+    final filteredProblems = _appProblems
+        .where((problem) => problem.problemType == 'واجهة المستخدم')
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'app',
+    );
+
     return Column(
       children: [
         Container(
@@ -4978,7 +5289,11 @@ Widget _buildElectricityContentTemplate({
                       color: _infoColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.phone_iphone, color: _infoColor, size: 24),
+                    child: Icon(
+                      Icons.phone_iphone,
+                      color: _infoColor,
+                      size: 24,
+                    ),
                   ),
                   SizedBox(width: 12),
                   Expanded(
@@ -5021,10 +5336,7 @@ Widget _buildElectricityContentTemplate({
                       Chip(
                         label: Text(
                           'غير مقروء',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 10),
                         ),
                         backgroundColor: _infoColor.withOpacity(0.8),
                       ),
@@ -5111,10 +5423,7 @@ Widget _buildElectricityContentTemplate({
                         _subTabStatus['app'] == 'غير مقروءة'
                             ? 'لا توجد بلاغات غير مقروءة'
                             : 'لا توجد بلاغات مقروءة',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -5149,9 +5458,14 @@ Widget _buildElectricityContentTemplate({
   }
 
   Widget _buildAppOtherContent() {
-    final filteredProblems = _appProblems.where((problem) => problem.problemType == 'أخرى').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'app');
-    
+    final filteredProblems = _appProblems
+        .where((problem) => problem.problemType == 'أخرى')
+        .toList();
+    final filteredByReadStatus = _filterProblemsByReadStatus(
+      filteredProblems,
+      'app',
+    );
+
     return Column(
       children: [
         Container(
@@ -5209,10 +5523,7 @@ Widget _buildElectricityContentTemplate({
                       Chip(
                         label: Text(
                           'غير مقروء',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 10),
                         ),
                         backgroundColor: _darkColor.withOpacity(0.8),
                       ),
@@ -5299,10 +5610,7 @@ Widget _buildElectricityContentTemplate({
                         _subTabStatus['app'] == 'غير مقروءة'
                             ? 'لا توجد بلاغات غير مقروءة'
                             : 'لا توجد بلاغات مقروءة',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -5364,18 +5672,12 @@ Widget _buildElectricityContentTemplate({
                 SizedBox(height: 12),
                 Text(
                   'وزارة الكهرباء - قسم $title',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
                 SizedBox(height: 20),
                 Text(
                   'سيتم إضافة محتوى هذا القسم قريباً',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -5448,11 +5750,7 @@ Widget _buildElectricityContentTemplate({
                             color: color.withOpacity(isRead ? 0.1 : 0.3),
                           ),
                         ),
-                        child: Icon(
-                          icon,
-                          color: color,
-                          size: 22,
-                        ),
+                        child: Icon(icon, color: color, size: 22),
                       ),
                       SizedBox(width: 12),
                       Expanded(
@@ -5463,7 +5761,9 @@ Widget _buildElectricityContentTemplate({
                               name,
                               style: TextStyle(
                                 fontSize: 15,
-                                fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                                fontWeight: isRead
+                                    ? FontWeight.normal
+                                    : FontWeight.bold,
                                 color: isRead ? Colors.grey[700] : color,
                               ),
                             ),
@@ -5471,33 +5771,42 @@ Widget _buildElectricityContentTemplate({
                               subtitle,
                               style: TextStyle(
                                 fontSize: 11,
-                                color: isRead ? Colors.grey[500] : Colors.grey[600],
+                                color: isRead
+                                    ? Colors.grey[500]
+                                    : Colors.grey[600],
                               ),
                             ),
                           ],
                         ),
                       ),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withOpacity(isRead ? 0.05 : 0.1),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: statusColor.withOpacity(isRead ? 0.2 : 0.3)),
+                          border: Border.all(
+                            color: statusColor.withOpacity(isRead ? 0.2 : 0.3),
+                          ),
                         ),
                         child: Text(
                           problem.status,
                           style: TextStyle(
                             fontSize: 10,
-                            fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                            fontWeight: isRead
+                                ? FontWeight.normal
+                                : FontWeight.bold,
                             color: statusColor,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  
+
                   SizedBox(height: 12),
-                  
+
                   if (!isRead) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -5527,7 +5836,7 @@ Widget _buildElectricityContentTemplate({
                     ),
                     SizedBox(height: 8),
                   ],
-                  
+
                   if (showCategory && category.isNotEmpty) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -5540,13 +5849,15 @@ Widget _buildElectricityContentTemplate({
                         style: TextStyle(
                           fontSize: 11,
                           color: isRead ? color.withOpacity(0.8) : color,
-                          fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                          fontWeight: isRead
+                              ? FontWeight.normal
+                              : FontWeight.bold,
                         ),
                       ),
                     ),
                     SizedBox(height: 8),
                   ],
-                  
+
                   if (showProblemType && problem.problemType != null) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -5558,19 +5869,25 @@ Widget _buildElectricityContentTemplate({
                         problem.problemType,
                         style: TextStyle(
                           fontSize: 11,
-                          color: isRead ? _primaryColor.withOpacity(0.8) : _primaryColor,
-                          fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                          color: isRead
+                              ? _primaryColor.withOpacity(0.8)
+                              : _primaryColor,
+                          fontWeight: isRead
+                              ? FontWeight.normal
+                              : FontWeight.bold,
                         ),
                       ),
                     ),
                     SizedBox(height: 8),
                   ],
-                  
+
                   if (showPriority) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: priority == 'عالي' ? _dangerColor.withOpacity(isRead ? 0.05 : 0.1) : _warningColor.withOpacity(isRead ? 0.05 : 0.1),
+                        color: priority == 'عالي'
+                            ? _dangerColor.withOpacity(isRead ? 0.05 : 0.1)
+                            : _warningColor.withOpacity(isRead ? 0.05 : 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
@@ -5579,15 +5896,21 @@ Widget _buildElectricityContentTemplate({
                           Icon(
                             priority == 'عالي' ? Icons.warning : Icons.info,
                             size: 12,
-                            color: priority == 'عالي' ? _dangerColor : _warningColor,
+                            color: priority == 'عالي'
+                                ? _dangerColor
+                                : _warningColor,
                           ),
                           SizedBox(width: 4),
                           Text(
                             'أولوية: $priority',
                             style: TextStyle(
                               fontSize: 11,
-                              color: priority == 'عالي' ? _dangerColor : _warningColor,
-                              fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                              color: priority == 'عالي'
+                                  ? _dangerColor
+                                  : _warningColor,
+                              fontWeight: isRead
+                                  ? FontWeight.normal
+                                  : FontWeight.bold,
                             ),
                           ),
                         ],
@@ -5595,7 +5918,7 @@ Widget _buildElectricityContentTemplate({
                     ),
                     SizedBox(height: 8),
                   ],
-                  
+
                   if (showEmployeeInfo && employeeName.isNotEmpty) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -5606,27 +5929,21 @@ Widget _buildElectricityContentTemplate({
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.person,
-                            size: 12,
-                            color: _infoColor,
-                          ),
+                          Icon(Icons.person, size: 12, color: _infoColor),
                           SizedBox(width: 4),
                           Text(
                             'الموظف: $employeeName',
                             style: TextStyle(
                               fontSize: 11,
                               color: _infoColor,
-                              fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                              fontWeight: isRead
+                                  ? FontWeight.normal
+                                  : FontWeight.bold,
                             ),
                           ),
                           if (delayHours > 0) ...[
                             SizedBox(width: 8),
-                            Icon(
-                              Icons.timer,
-                              size: 12,
-                              color: _dangerColor,
-                            ),
+                            Icon(Icons.timer, size: 12, color: _dangerColor),
                             SizedBox(width: 2),
                             Text(
                               'تأخر: ${delayHours} ساعة',
@@ -5642,7 +5959,7 @@ Widget _buildElectricityContentTemplate({
                     ),
                     SizedBox(height: 8),
                   ],
-                  
+
                   if (showAppInfo) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -5664,7 +5981,9 @@ Widget _buildElectricityContentTemplate({
                             style: TextStyle(
                               fontSize: 11,
                               color: _accentColor,
-                              fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                              fontWeight: isRead
+                                  ? FontWeight.normal
+                                  : FontWeight.bold,
                             ),
                           ),
                         ],
@@ -5672,7 +5991,7 @@ Widget _buildElectricityContentTemplate({
                     ),
                     SizedBox(height: 8),
                   ],
-                  
+
                   Row(
                     children: [
                       Icon(Icons.location_on, size: 14, color: Colors.grey),
@@ -5689,9 +6008,9 @@ Widget _buildElectricityContentTemplate({
                       ),
                     ],
                   ),
-                  
+
                   SizedBox(height: 4),
-                  
+
                   Row(
                     children: [
                       Icon(Icons.calendar_today, size: 14, color: Colors.grey),
@@ -5715,12 +6034,12 @@ Widget _buildElectricityContentTemplate({
                       ),
                     ],
                   ),
-                  
+
                   SizedBox(height: 12),
-                  
+
                   Text(
-                    problem.description.length > 120 
-                        ? '${problem.description.substring(0, 120)}...' 
+                    problem.description.length > 120
+                        ? '${problem.description.substring(0, 120)}...'
                         : problem.description,
                     style: TextStyle(
                       fontSize: 12,
@@ -5730,9 +6049,9 @@ Widget _buildElectricityContentTemplate({
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   SizedBox(height: 12),
-                  
+
                   Container(
                     height: 100,
                     width: double.infinity,
@@ -5771,20 +6090,25 @@ Widget _buildElectricityContentTemplate({
                         onTap: onShare,
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: _accentColor.withOpacity(isRead ? 0.05 : 0.1),
+                            color: _accentColor.withOpacity(
+                              isRead ? 0.05 : 0.1,
+                            ),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: _accentColor.withOpacity(isRead ? 0.2 : 0.3)),
+                            border: Border.all(
+                              color: _accentColor.withOpacity(
+                                isRead ? 0.2 : 0.3,
+                              ),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.share,
-                                size: 14,
-                                color: _accentColor,
-                              ),
+                              Icon(Icons.share, size: 14, color: _accentColor),
                               SizedBox(width: 4),
                               Text(
                                 'مشاركة مع المسؤول',
@@ -5804,11 +6128,16 @@ Widget _buildElectricityContentTemplate({
                           onTap: () => _markAsRead(problem),
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: _successColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: _successColor.withOpacity(0.3)),
+                              border: Border.all(
+                                color: _successColor.withOpacity(0.3),
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -5849,7 +6178,11 @@ Widget _buildElectricityContentTemplate({
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_circle, size: 10, color: Colors.grey[600]),
+                      Icon(
+                        Icons.check_circle,
+                        size: 10,
+                        color: Colors.grey[600],
+                      ),
                       SizedBox(width: 2),
                       Text(
                         'مقروء',
@@ -5870,23 +6203,24 @@ Widget _buildElectricityContentTemplate({
   }
 
   String _getLocation(dynamic problem) {
-  if (problem is ElectricityProblem) return problem.location;
-  if (problem is EmployeeProblem) return problem.location;
-  if (problem is AppProblem) return problem.location;
-  if (problem is TransformerProblem) return problem.location;
-  if (problem is SafetyHazardProblem) return problem.location;
-  if (problem is ConnectionProblem) return problem.location;
-  if (problem is EmergencyReport) return problem.location; // أضف هذا
-  return '';
-}
+    if (problem is ElectricityProblem) return problem.location;
+    if (problem is EmployeeProblem) return problem.location;
+    if (problem is AppProblem) return problem.location;
+    if (problem is TransformerProblem) return problem.location;
+    if (problem is SafetyHazardProblem) return problem.location;
+    if (problem is ConnectionProblem) return problem.location;
+    if (problem is EmergencyReport) return problem.location; // أضف هذا
+    return '';
+  }
 
   void _showProblemDetails(dynamic problem) {
     // ignore: unused_local_variable
     String details = '';
     String imageCaption = '';
-    
+
     if (problem is ElectricityProblem) {
-      details = '''
+      details =
+          '''
 🏢 **وزارة الكهرباء - نظام الإبلاغات**
 📋 **تفاصيل البلاغ**
 
@@ -5911,19 +6245,25 @@ ${problem.description}
 🗺️ **الموقع الدقيق:**
 تم تحديد الموقع الجغرافي عبر نظام التتبع
 
-📊 **معلومات إضافية:'''
-      + (problem.voltageReading != null ? '\n⚡ **قراءة الفولطية:** ${problem.voltageReading}' : '')
-      + (problem.meterNumber != null ? '\n🔢 **رقم العداد:** ${problem.meterNumber}' : '')
-      + (problem.transformerCode != null ? '\n🏭 **كود المحول:** ${problem.transformerCode}' : '')
-      + '''
+📊 **معلومات إضافية:''' +
+          (problem.voltageReading != null
+              ? '\n⚡ **قراءة الفولطية:** ${problem.voltageReading}'
+              : '') +
+          (problem.meterNumber != null
+              ? '\n🔢 **رقم العداد:** ${problem.meterNumber}'
+              : '') +
+          (problem.transformerCode != null
+              ? '\n🏭 **كود المحول:** ${problem.transformerCode}'
+              : '') +
+          '''
       
 🚨 **إجراءات الصيانة:**
 تم إرسال البلاغ إلى فريق الصيانة للتعامل الفوري
       ''';
       imageCaption = 'صورة توضح مشكلة الكهرباء';
-      
     } else if (problem is EmployeeProblem) {
-      details = '''
+      details =
+          '''
 🏢 **وزارة الكهرباء - نظام الإبلاغات**
 📋 **تفاصيل بلاغ تقصير الموظف**
 
@@ -5947,9 +6287,9 @@ ${problem.description}
 🎯 **درجة الخطورة:** متوسطة
       ''';
       imageCaption = 'صورة توضح المشكلة مع الموظف';
-      
     } else if (problem is AppProblem) {
-      details = '''
+      details =
+          '''
 🏢 **وزارة الكهرباء - نظام الإبلاغات**
 📋 **تفاصيل بلاغ مشكلة التطبيق**
 
@@ -5972,9 +6312,9 @@ ${problem.description}
 🚨 **درجة التأثير:** ${problem.problemType == 'تعطل في التطبيق' ? 'عالية' : 'متوسطة'}
       ''';
       imageCaption = 'لقطة شاشة توضح مشكلة التطبيق';
-      
     } else if (problem is TransformerProblem) {
-      details = '''
+      details =
+          '''
 🏢 **وزارة الكهرباء - نظام الإبلاغات**
 📋 **تفاصيل بلاغ المحول الكهربائي**
 
@@ -5995,9 +6335,9 @@ ${problem.description}
 ⚡ **نوع المشكلة:** تقنية
       ''';
       imageCaption = 'صورة توضح مشكلة المحول الكهربائي';
-      
     } else {
-      details = '''
+      details =
+          '''
 🏢 **وزارة الكهرباء - نظام الإبلاغات**
 📋 **تفاصيل البلاغ**
 
@@ -6073,26 +6413,20 @@ ${problem.description}
                       SizedBox(height: 8),
                       Text(
                         imageCaption,
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 14),
                       ),
                       SizedBox(height: 4),
                       Text(
                         'تم رفعها بواسطة العميل',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 10,
-                        ),
+                        style: TextStyle(color: Colors.grey[400], fontSize: 10),
                       ),
                     ],
                   ),
                 ),
               ),
-              
+
               SizedBox(height: 16),
-              
+
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -6112,22 +6446,34 @@ ${problem.description}
                       ),
                     ),
                     SizedBox(height: 8),
-                    
+
                     _buildDetailRow('👤 العميل:', problem.customerName),
                     if (problem is ElectricityProblem)
                       _buildDetailRow('🆔 رقم العميل:', problem.customerId),
-                    if (problem is EmployeeProblem && problem.employeeName != null)
+                    if (problem is EmployeeProblem &&
+                        problem.employeeName != null)
                       _buildDetailRow('👨‍💼 الموظف:', problem.employeeName!),
-                    if (problem is EmployeeProblem && problem.employeeDepartment != null)
-                      _buildDetailRow('🏘️ الإدارة:', problem.employeeDepartment!),
-                    if (problem is EmployeeProblem && problem.delayHours != null)
-                      _buildDetailRow('⏳ ساعات التأخير:', '${problem.delayHours} ساعة'),
+                    if (problem is EmployeeProblem &&
+                        problem.employeeDepartment != null)
+                      _buildDetailRow(
+                        '🏘️ الإدارة:',
+                        problem.employeeDepartment!,
+                      ),
+                    if (problem is EmployeeProblem &&
+                        problem.delayHours != null)
+                      _buildDetailRow(
+                        '⏳ ساعات التأخير:',
+                        '${problem.delayHours} ساعة',
+                      ),
                     if (problem is AppProblem && problem.appVersion != null)
                       _buildDetailRow('📊 إصدار التطبيق:', problem.appVersion!),
                     if (problem is AppProblem && problem.deviceType != null)
                       _buildDetailRow('📟 نوع الجهاز:', problem.deviceType!),
                     if (problem is TransformerProblem)
-                      _buildDetailRow('🏭 كود المحول:', problem.transformerCode),
+                      _buildDetailRow(
+                        '🏭 كود المحول:',
+                        problem.transformerCode,
+                      ),
                     if (problem is ElectricityProblem)
                       _buildDetailRow('🔧 نوع المشكلة:', problem.problemType),
                     if (problem is EmployeeProblem)
@@ -6135,20 +6481,23 @@ ${problem.description}
                     if (problem is AppProblem)
                       _buildDetailRow('📱 نوع المشكلة:', problem.problemType),
                     if (problem is ElectricityProblem)
-                      _buildDetailRow('📊 فئة المشكلة:', problem.problemCategory),
+                      _buildDetailRow(
+                        '📊 فئة المشكلة:',
+                        problem.problemCategory,
+                      ),
                     if (problem is ElectricityProblem)
                       _buildDetailRow('🏭 محطة التحويل:', problem.substation),
                     _buildDetailRow('📍 الموقع:', _getLocation(problem)),
                     _buildDetailRow('📅 التاريخ:', problem.date),
                     _buildDetailRow('⏰ الوقت:', problem.time),
                     _buildDetailRow('📌 الحالة:', problem.status),
-                    if (problem is ElectricityProblem )
+                    if (problem is ElectricityProblem)
                       _buildDetailRow('⏳ المدة:', problem.duration),
-                    if (problem is ElectricityProblem )
+                    if (problem is ElectricityProblem)
                       _buildDetailRow('⚡ الأولوية:', problem.priority),
-                    
+
                     SizedBox(height: 12),
-                    
+
                     Text(
                       '📝 وصف المشكلة:',
                       style: TextStyle(
@@ -6169,9 +6518,9 @@ ${problem.description}
                   ],
                 ),
               ),
-              
+
               SizedBox(height: 16),
-              
+
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -6243,14 +6592,14 @@ ${problem.description}
 
   String _generateReportNumber(dynamic problem) {
     String prefix = 'ELEC';
-    
+
     if (problem is ElectricityProblem) prefix = 'ELEC';
     if (problem is EmployeeProblem) prefix = 'EMP';
     if (problem is AppProblem) prefix = 'APP';
     if (problem is TransformerProblem) prefix = 'TRF';
     if (problem is SafetyHazardProblem) prefix = 'SAFE';
     if (problem is ConnectionProblem) prefix = 'CONN';
-    
+
     return '$prefix-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
   }
 
@@ -6264,10 +6613,7 @@ ${problem.description}
             flex: 1,
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
             ),
           ),
           SizedBox(width: 8),
@@ -6348,7 +6694,11 @@ ${problem.description}
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: _primaryColor,
-                    child: Icon(Icons.engineering, color: Colors.white, size: 20),
+                    child: Icon(
+                      Icons.engineering,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                   title: Text(
                     'الإدارة المختصة',
@@ -6359,20 +6709,14 @@ ${problem.description}
                   ),
                   subtitle: Text(
                     'وزارة الكهرباء - القسم المعني',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ),
               ),
               SizedBox(height: 16),
               Text(
                 'تأكيد إرسال بلاغ $problemType؟',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
               ),
             ],
           ),
@@ -6387,12 +6731,7 @@ ${problem.description}
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: Text(
-                'إلغاء',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                ),
-              ),
+              child: Text('إلغاء', style: TextStyle(color: Colors.grey[600])),
             ),
             SizedBox(width: 8),
             ElevatedButton(
@@ -6409,9 +6748,7 @@ ${problem.description}
               ),
               child: Text(
                 'تأكيد الإرسال',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -6463,10 +6800,7 @@ ${problem.description}
                     ),
                     Text(
                       'سيتم معالجته من قبل الجهة المختصة',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -6485,9 +6819,7 @@ ${problem.description}
   Widget _buildProblemDetailsCard() {
     return Card(
       elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.85,
         height: MediaQuery.of(context).size.height * 0.75,
@@ -6509,7 +6841,11 @@ ${problem.description}
               ),
               child: Column(
                 children: [
-                  Icon(Icons.electrical_services, color: Colors.white, size: 32),
+                  Icon(
+                    Icons.electrical_services,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                   SizedBox(height: 8),
                   Text(
                     _selectedProblem,
@@ -6531,7 +6867,7 @@ ${problem.description}
                 ],
               ),
             ),
-            
+
             Expanded(
               child: Padding(
                 padding: EdgeInsets.all(20.0),
@@ -6564,18 +6900,16 @@ ${problem.description}
                         ],
                       ),
                     ),
-                    
+
                     SizedBox(height: 20),
-                    
+
                     Expanded(
                       child: Container(
                         padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.grey[50],
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.grey[200]!,
-                          ),
+                          border: Border.all(color: Colors.grey[200]!),
                         ),
                         child: SingleChildScrollView(
                           child: Text(
@@ -6590,17 +6924,16 @@ ${problem.description}
                         ),
                       ),
                     ),
-                    
+
                     SizedBox(height: 20),
-                    
+
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
                               _animationController.reverse().then((value) {
-                                setState(() {
-                                });
+                                setState(() {});
                               });
                             },
                             style: OutlinedButton.styleFrom(
@@ -6625,8 +6958,7 @@ ${problem.description}
                           child: ElevatedButton(
                             onPressed: () {
                               _animationController.reverse().then((value) {
-                                setState(() {
-                                });
+                                setState(() {});
                               });
                               _showSuccessMessage();
                             },
@@ -6710,10 +7042,7 @@ ${problem.description}
                     ),
                     Text(
                       'رقم البلاغ: ${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -6758,10 +7087,7 @@ class _SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('الإعدادات'),
-        backgroundColor: primaryColor,
-      ),
+      appBar: AppBar(title: Text('الإعدادات'), backgroundColor: primaryColor),
       body: Container(
         color: cardColor,
         child: Center(
@@ -6807,7 +7133,10 @@ class _HelpSupportScreen extends StatelessWidget {
       body: Container(
         color: cardColor,
         child: Center(
-          child: Text('شاشة المساعدة والدعم', style: TextStyle(color: textColor)),
+          child: Text(
+            'شاشة المساعدة والدعم',
+            style: TextStyle(color: textColor),
+          ),
         ),
       ),
     );
@@ -7192,7 +7521,8 @@ class ConnectionProblem {
       reportedDate: reportedDate ?? this.reportedDate,
     );
   }
-} 
+}
+
 // الشاشة الرئيسية للإشعارات
 class NotificationsScreen extends StatefulWidget {
   static const String routeName = '/notifications';
@@ -7219,7 +7549,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   int _selectedTab = 0;
   final List<String> _tabs = ['الجميع', 'غير مقروءة', 'مقروءة', 'النظام'];
-  
+
   // قائمة الإشعارات الكاملة
   final List<Map<String, dynamic>> _allNotifications = [
     // إشعارات غير مقروءة
@@ -7227,7 +7557,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'id': '1',
       'type': 'electricity',
       'title': 'انقطاع تيار كهربائي جديد',
-      'description': 'بلاغ جديد عن انقطاع التيار في منطقة حي السلام، تم الإبلاغ الساعة 08:30 صباحاً',
+      'description':
+          'بلاغ جديد عن انقطاع التيار في منطقة حي السلام، تم الإبلاغ الساعة 08:30 صباحاً',
       'time': 'منذ 5 دقائق',
       'read': false,
       'category': 'كهرباء',
@@ -7239,7 +7570,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'id': '2',
       'type': 'employee',
       'title': 'تأخير موظف الصيانة',
-      'description': 'مواطن يبلغ عن تأخير موظف الصيانة لمدة 3 ساعات في منطقة حي النزهة',
+      'description':
+          'مواطن يبلغ عن تأخير موظف الصيانة لمدة 3 ساعات في منطقة حي النزهة',
       'time': 'منذ 15 دقيقة',
       'read': false,
       'category': 'موظفين',
@@ -7251,7 +7583,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'id': '3',
       'type': 'app',
       'title': 'مشكلة في التطبيق',
-      'description': 'عميل يبلغ عن تعطل في التطبيق عند دفع الفاتورة، الإصدار 2.1.0',
+      'description':
+          'عميل يبلغ عن تعطل في التطبيق عند دفع الفاتورة، الإصدار 2.1.0',
       'time': 'منذ 30 دقيقة',
       'read': false,
       'category': 'تطبيق',
@@ -7263,7 +7596,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'id': '4',
       'type': 'safety',
       'title': 'خطر أماني',
-      'description': 'أسلاك كهرباء مكشوفة في شارع الملك فهد، تشكل خطراً على المارة',
+      'description':
+          'أسلاك كهرباء مكشوفة في شارع الملك فهد، تشكل خطراً على المارة',
       'time': 'منذ 45 دقيقة',
       'read': false,
       'category': 'أمان',
@@ -7277,7 +7611,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'id': '5',
       'type': 'electricity',
       'title': 'مشكلة في الفولطية',
-      'description': 'تم معالجة مشكلة انخفاض الجهد في حي النزهة، تمت الإصلاح الساعة 10:00 صباحاً',
+      'description':
+          'تم معالجة مشكلة انخفاض الجهد في حي النزهة، تمت الإصلاح الساعة 10:00 صباحاً',
       'time': 'منذ ساعة',
       'read': true,
       'category': 'كهرباء',
@@ -7289,7 +7624,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'id': '6',
       'type': 'system',
       'title': 'تحديث النظام',
-      'description': 'تم تحديث نظام البلاغات إلى الإصدار 2.1.0، تم إضافة ميزات جديدة',
+      'description':
+          'تم تحديث نظام البلاغات إلى الإصدار 2.1.0، تم إضافة ميزات جديدة',
       'time': 'منذ 3 ساعات',
       'read': true,
       'category': 'نظام',
@@ -7301,7 +7637,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'id': '7',
       'type': 'report',
       'title': 'تقرير أسبوعي جاهز',
-      'description': 'تم إنشاء التقرير الأسبوعي لبلاغات الكهرباء، يمكنك تصديره الآن',
+      'description':
+          'تم إنشاء التقرير الأسبوعي لبلاغات الكهرباء، يمكنك تصديره الآن',
       'time': 'منذ يوم',
       'read': true,
       'category': 'تقارير',
@@ -7313,7 +7650,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'id': '8',
       'type': 'alert',
       'title': 'تحذير عاصفة',
-      'description': 'تحذير من عاصفة رعدية قد تؤثر على شبكة الكهرباء في المنطقة الشمالية',
+      'description':
+          'تحذير من عاصفة رعدية قد تؤثر على شبكة الكهرباء في المنطقة الشمالية',
       'time': 'منذ يومين',
       'read': true,
       'category': 'تنبيهات',
@@ -7353,11 +7691,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 0: // الجميع
         return _allNotifications;
       case 1: // غير مقروءة
-        return _allNotifications.where((notification) => !notification['read']).toList();
+        return _allNotifications
+            .where((notification) => !notification['read'])
+            .toList();
       case 2: // مقروءة
-        return _allNotifications.where((notification) => notification['read']).toList();
+        return _allNotifications
+            .where((notification) => notification['read'])
+            .toList();
       case 3: // النظام
-        return _allNotifications.where((notification) => notification['type'] == 'system').toList();
+        return _allNotifications
+            .where((notification) => notification['type'] == 'system')
+            .toList();
       default:
         return _allNotifications;
     }
@@ -7365,18 +7709,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   // دالة لعرض عدد الإشعارات غير المقروءة
   int get _unreadCount {
-    return _allNotifications.where((notification) => !notification['read']).length;
+    return _allNotifications
+        .where((notification) => !notification['read'])
+        .length;
   }
 
   // دالة لتمييز الإشعار كمقروء
   void _markAsRead(String notificationId) {
     setState(() {
-      final index = _allNotifications.indexWhere((n) => n['id'] == notificationId);
+      final index = _allNotifications.indexWhere(
+        (n) => n['id'] == notificationId,
+      );
       if (index != -1) {
         _allNotifications[index]['read'] = true;
       }
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('تم تمييز الإشعار كمقروء'),
@@ -7493,7 +7841,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (!notification['read']) {
       _markAsRead(notification['id']);
     }
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -7513,7 +7861,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(notification['icon'], color: Colors.white, size: 20),
+                child: Icon(
+                  notification['icon'],
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               SizedBox(width: 12),
               Expanded(
@@ -7549,7 +7901,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.schedule_rounded, size: 16, color: _textSecondaryColor),
+                  Icon(
+                    Icons.schedule_rounded,
+                    size: 16,
+                    color: _textSecondaryColor,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     notification['time'],
@@ -7559,7 +7915,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: notification['priority'] == 'عالي' 
+                      color: notification['priority'] == 'عالي'
                           ? _errorColor.withOpacity(0.1)
                           : _warningColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
@@ -7568,8 +7924,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       'أولوية: ${notification['priority']}',
                       style: TextStyle(
                         fontSize: 10,
-                        color: notification['priority'] == 'عالي' 
-                            ? _errorColor 
+                        color: notification['priority'] == 'عالي'
+                            ? _errorColor
                             : _warningColor,
                         fontWeight: FontWeight.bold,
                       ),
@@ -7577,9 +7933,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                 ],
               ),
-              
+
               SizedBox(height: 16),
-              
+
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -7595,21 +7951,39 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                 ),
               ),
-              
+
               if (notification['type'] == 'electricity') ...[
                 SizedBox(height: 16),
-                Text('تفاصيل إضافية:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  'تفاصيل إضافية:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 SizedBox(height: 8),
-                _buildNotificationDetailRow('نوع المشكلة:', 'انقطاع التيار الكهربائي'),
-                _buildNotificationDetailRow('الموقع:', 'حي السلام - شارع الملك فهد'),
-                _buildNotificationDetailRow('التاريخ:', DateFormat('yyyy-MM-dd').format(DateTime.now())),
+                _buildNotificationDetailRow(
+                  'نوع المشكلة:',
+                  'انقطاع التيار الكهربائي',
+                ),
+                _buildNotificationDetailRow(
+                  'الموقع:',
+                  'حي السلام - شارع الملك فهد',
+                ),
+                _buildNotificationDetailRow(
+                  'التاريخ:',
+                  DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                ),
                 _buildNotificationDetailRow('الوقت:', '08:30 ص'),
                 _buildNotificationDetailRow('الحالة:', 'قيد المعالجة'),
-                _buildNotificationDetailRow('رقم البلاغ:', 'ELEC-${notification['id']}'),
+                _buildNotificationDetailRow(
+                  'رقم البلاغ:',
+                  'ELEC-${notification['id']}',
+                ),
               ],
               if (notification['type'] == 'employee') ...[
                 SizedBox(height: 16),
-                Text('تفاصيل الموظف:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  'تفاصيل الموظف:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 SizedBox(height: 8),
                 _buildNotificationDetailRow('اسم الموظف:', 'أحمد سعيد'),
                 _buildNotificationDetailRow('القسم:', 'إدارة الصيانة'),
@@ -7659,10 +8033,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             flex: 3,
             child: Text(
               value,
-              style: TextStyle(
-                color: _textColor,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: _textColor, fontSize: 12),
             ),
           ),
         ],
@@ -7688,7 +8059,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Icon(Icons.notifications_active_rounded, size: 24, color: Colors.white),
+            Icon(
+              Icons.notifications_active_rounded,
+              size: 24,
+              color: Colors.white,
+            ),
             SizedBox(width: 8),
             Text('الإشعارات', style: TextStyle(color: Colors.white)),
             SizedBox(width: 8),
@@ -7777,9 +8152,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             height: 50,
             decoration: BoxDecoration(
               color: _cardColor,
-              border: Border(
-                bottom: BorderSide(color: _borderColor),
-              ),
+              border: Border(bottom: BorderSide(color: _borderColor)),
             ),
             child: Row(
               children: [
@@ -7799,9 +8172,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('الكل', _allNotifications.length.toString(), Icons.list_rounded, _primaryColor),
-                _buildStatItem('غير مقروء', _unreadCount.toString(), Icons.mark_email_unread_rounded, _errorColor),
-                _buildStatItem('مقروء', (_allNotifications.length - _unreadCount).toString(), Icons.mark_email_read_rounded, _successColor),
+                _buildStatItem(
+                  'الكل',
+                  _allNotifications.length.toString(),
+                  Icons.list_rounded,
+                  _primaryColor,
+                ),
+                _buildStatItem(
+                  'غير مقروء',
+                  _unreadCount.toString(),
+                  Icons.mark_email_unread_rounded,
+                  _errorColor,
+                ),
+                _buildStatItem(
+                  'مقروء',
+                  (_allNotifications.length - _unreadCount).toString(),
+                  Icons.mark_email_read_rounded,
+                  _successColor,
+                ),
               ],
             ),
           ),
@@ -7834,14 +8222,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget _buildTabButton(String title, int index) {
     bool isSelected = _selectedTab == index;
     int count = 0;
-    
+
     switch (index) {
-      case 0: count = _allNotifications.length; break;
-      case 1: count = _allNotifications.where((n) => !n['read']).length; break;
-      case 2: count = _allNotifications.where((n) => n['read']).length; break;
-      case 3: count = _allNotifications.where((n) => n['type'] == 'system').length; break;
+      case 0:
+        count = _allNotifications.length;
+        break;
+      case 1:
+        count = _allNotifications.where((n) => !n['read']).length;
+        break;
+      case 2:
+        count = _allNotifications.where((n) => n['read']).length;
+        break;
+      case 3:
+        count = _allNotifications.where((n) => n['type'] == 'system').length;
+        break;
     }
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -7897,9 +8293,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   // دالة بناء بطاقة الإشعار
   Widget _buildNotificationCard(Map<String, dynamic> notification) {
-    Color bgColor = notification['read'] ? _cardColor : _primaryColor.withOpacity(0.05);
-    Color borderColor = notification['read'] ? _borderColor : notification['color'].withOpacity(0.3);
-    
+    Color bgColor = notification['read']
+        ? _cardColor
+        : _primaryColor.withOpacity(0.05);
+    Color borderColor = notification['read']
+        ? _borderColor
+        : notification['color'].withOpacity(0.3);
+
     return Dismissible(
       key: Key(notification['id']),
       direction: DismissDirection.endToStart,
@@ -7939,10 +8339,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: bgColor,
-              border: Border(left: BorderSide(
-                color: notification['color'],
-                width: 4,
-              )),
+              border: Border(
+                left: BorderSide(color: notification['color'], width: 4),
+              ),
             ),
             child: InkWell(
               onTap: () => _showNotificationDetails(notification),
@@ -7957,10 +8356,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       color: notification['color'].withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(notification['icon'], color: notification['color'], size: 20),
+                    child: Icon(
+                      notification['icon'],
+                      color: notification['color'],
+                      size: 20,
+                    ),
                   ),
                   SizedBox(width: 12),
-                  
+
                   // محتوى الإشعار
                   Expanded(
                     child: Column(
@@ -7979,10 +8382,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 ),
                               ),
                             if (!notification['read']) SizedBox(width: 6),
-                            
+
                             // الفئة
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: notification['color'].withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
@@ -7997,12 +8403,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               ),
                             ),
                             SizedBox(width: 6),
-                            
+
                             // الأولوية
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: notification['priority'] == 'عالي' 
+                                color: notification['priority'] == 'عالي'
                                     ? _errorColor.withOpacity(0.1)
                                     : _warningColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
@@ -8011,15 +8420,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 notification['priority'],
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: notification['priority'] == 'عالي' 
-                                      ? _errorColor 
+                                  color: notification['priority'] == 'عالي'
+                                      ? _errorColor
                                       : _warningColor,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
                             Spacer(),
-                            
+
                             // الوقت
                             Text(
                               notification['time'],
@@ -8030,9 +8439,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             ),
                           ],
                         ),
-                        
+
                         SizedBox(height: 8),
-                        
+
                         // العنوان
                         Text(
                           notification['title'],
@@ -8042,9 +8451,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             color: _textColor,
                           ),
                         ),
-                        
+
                         SizedBox(height: 4),
-                        
+
                         // الوصف
                         Text(
                           notification['description'],
@@ -8055,20 +8464,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        
+
                         SizedBox(height: 12),
-                        
+
                         // الأزرار
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             if (!notification['read'])
                               ElevatedButton(
-                                onPressed: () => _markAsRead(notification['id']),
+                                onPressed: () =>
+                                    _markAsRead(notification['id']),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: _successColor,
                                   foregroundColor: Colors.white,
-                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   minimumSize: Size(0, 0),
                                 ),
                                 child: Row(
@@ -8076,17 +8489,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   children: [
                                     Icon(Icons.check_rounded, size: 14),
                                     SizedBox(width: 4),
-                                    Text('مقروء', style: TextStyle(fontSize: 12)),
+                                    Text(
+                                      'مقروء',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
                                   ],
                                 ),
                               ),
                             SizedBox(width: 8),
                             ElevatedButton(
-                              onPressed: () => _showNotificationDetails(notification),
+                              onPressed: () =>
+                                  _showNotificationDetails(notification),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _primaryColor,
                                 foregroundColor: Colors.white,
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 minimumSize: Size(0, 0),
                               ),
                               child: Row(
@@ -8107,17 +8527,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             ),
           ),
-          Container(
-            height: 1,
-            color: borderColor,
-          ),
+          Container(height: 1, color: borderColor),
         ],
       ),
     );
   }
 
   // دالة بناء عنصر الإحصائيات
-  Widget _buildStatItem(String title, String value, IconData icon, Color color) {
+  Widget _buildStatItem(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Container(
@@ -8138,13 +8560,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             color: color,
           ),
         ),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 10,
-            color: _textSecondaryColor,
-          ),
-        ),
+        Text(title, style: TextStyle(fontSize: 10, color: _textSecondaryColor)),
       ],
     );
   }
@@ -8154,7 +8570,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     IconData icon;
     String title;
     String description;
-    
+
     switch (_selectedTab) {
       case 1: // غير مقروءة
         icon = Icons.mark_email_read_rounded;
@@ -8176,7 +8592,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         title = 'لا توجد إشعارات';
         description = 'سيظهر هنا الإشعارات عند وصولها';
     }
-    
+
     return Center(
       child: Padding(
         padding: EdgeInsets.all(32),
@@ -8197,9 +8613,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             SizedBox(height: 8),
             Text(
               description,
-              style: TextStyle(
-                color: _textSecondaryColor,
-              ),
+              style: TextStyle(color: _textSecondaryColor),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24),
@@ -8215,6 +8629,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 }
+
 // الشاشة الرئيسية للمساعدة والدعم
 class HelpSupportScreen extends StatefulWidget {
   final Color primaryColor;
@@ -8251,28 +8666,33 @@ class HelpSupportScreen extends StatefulWidget {
 class _HelpSupportScreenState extends State<HelpSupportScreen> {
   int _selectedTab = 0;
   final List<String> _tabs = ['المساعدة', 'الدعم', 'اتصل بنا', 'عن التطبيق'];
-  
+
   // قائمة الأسئلة الشائعة
   final List<Map<String, String>> _faqs = [
     {
       'question': 'كيف يمكنني الإبلاغ عن مشكلة في الكهرباء؟',
-      'answer': 'يمكنك الإبلاغ عن مشاكل الكهرباء من خلال التبويب الأول "إبلاغ عن خدمة الكهرباء" → اختر نوع المشكلة → املأ البيانات المطلوبة → اضغط على زر "إرسال البلاغ"'
+      'answer':
+          'يمكنك الإبلاغ عن مشاكل الكهرباء من خلال التبويب الأول "إبلاغ عن خدمة الكهرباء" → اختر نوع المشكلة → املأ البيانات المطلوبة → اضغط على زر "إرسال البلاغ"',
     },
     {
       'question': 'كيف أتابع حالة البلاغ الذي أرسلته؟',
-      'answer': 'يمكنك متابعة حالة البلاغ من خلال قسم "التقارير" → اختر التقرير المناسب → ابحث عن بلاغك باستخدام رقم البلاغ أو اسم العميل'
+      'answer':
+          'يمكنك متابعة حالة البلاغ من خلال قسم "التقارير" → اختر التقرير المناسب → ابحث عن بلاغك باستخدام رقم البلاغ أو اسم العميل',
     },
     {
       'question': 'كيف يمكنني التواصل مع موظف الدعم؟',
-      'answer': 'يمكنك التواصل مع موظف الدعم من خلال التبويب "الدعم" في هذه الشاشة → اختر "محادثة مباشرة" أو اتصل على رقم الدعم الفني'
+      'answer':
+          'يمكنك التواصل مع موظف الدعم من خلال التبويب "الدعم" في هذه الشاشة → اختر "محادثة مباشرة" أو اتصل على رقم الدعم الفني',
     },
     {
       'question': 'كيف أعدل بياناتي الشخصية؟',
-      'answer': 'يمكنك تعديل بياناتك الشخصية من خلال القائمة الجانبية → اختر "الإعدادات" → ثم "المعلومات الشخصية" → قم بالتعديلات المطلوبة'
+      'answer':
+          'يمكنك تعديل بياناتك الشخصية من خلال القائمة الجانبية → اختر "الإعدادات" → ثم "المعلومات الشخصية" → قم بالتعديلات المطلوبة',
     },
     {
       'question': 'كيف أتصدير تقرير البلاغات؟',
-      'answer': 'اذهب إلى قسم "التقارير" → اختر نوع التقرير → حدد الفترة الزمنية → اضغط على زر "تصدير PDF" → اختر مكان الحفظ'
+      'answer':
+          'اذهب إلى قسم "التقارير" → اختر نوع التقرير → حدد الفترة الزمنية → اضغط على زر "تصدير PDF" → اختر مكان الحفظ',
     },
   ];
 
@@ -8280,22 +8700,26 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   final List<Map<String, dynamic>> _commonProblems = [
     {
       'problem': 'انقطاع التيار الكهربائي',
-      'solution': 'تحقق من القواطع الكهربائية - تأكد من عدم وجود صيانة في المنطقة - اتصل بالدعم الفني',
+      'solution':
+          'تحقق من القواطع الكهربائية - تأكد من عدم وجود صيانة في المنطقة - اتصل بالدعم الفني',
       'emergency': true,
     },
     {
       'problem': 'انخفاض الجهد الكهربائي',
-      'solution': 'افصل الأجهزة الحساسة - استخدم مثبتات الجهد - أبلغ قسم الصيانة',
+      'solution':
+          'افصل الأجهزة الحساسة - استخدم مثبتات الجهد - أبلغ قسم الصيانة',
       'emergency': false,
     },
     {
       'problem': 'صوت عالي من المحول',
-      'solution': 'ابتعد عن المحول - أبلغ فوراً بخطورة الموقف - لا تقترب من الأسلاك',
+      'solution':
+          'ابتعد عن المحول - أبلغ فوراً بخطورة الموقف - لا تقترب من الأسلاك',
       'emergency': true,
     },
     {
       'problem': 'فواتير مرتفعة غير متوقعة',
-      'solution': 'تحقق من قراءة العداد - تأكد من عدم وجود تسرب - اتصل بقسم الفواتير',
+      'solution':
+          'تحقق من قراءة العداد - تأكد من عدم وجود تسرب - اتصل بقسم الفواتير',
       'emergency': false,
     },
   ];
@@ -8351,10 +8775,12 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   void _sendEmail() async {
     final email = 'fadhilali402@gmail.com';
     final subject = 'استفسار - نظام إبلاغات الكهرباء';
-    final body = 'أنا بحاجة إلى مساعدة بخصوص:\n\n\n\nالتاريخ: ${DateFormat('yyyy-MM-dd').format(DateTime.now())}';
-    
-    final url = 'mailto:$email?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
-    
+    final body =
+        'أنا بحاجة إلى مساعدة بخصوص:\n\n\n\nالتاريخ: ${DateFormat('yyyy-MM-dd').format(DateTime.now())}';
+
+    final url =
+        'mailto:$email?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
+
     if (await canLaunch(url)) {
       await launch(url);
     } else {
@@ -8401,10 +8827,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => FAQDetailScreen(
-        faqs: _faqs,
-        primaryColor: widget.primaryColor,
-      ),
+      builder: (context) =>
+          FAQDetailScreen(faqs: _faqs, primaryColor: widget.primaryColor),
     );
   }
 
@@ -8419,11 +8843,31 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildGuideStep('1', 'تسجيل الدخول', 'ادخل بيانات الدخول الصحيحة للوصول للنظام'),
-              _buildGuideStep('2', 'الإبلاغ عن مشكلة', 'اختر نوع المشكلة واملأ التفاصيل المطلوبة'),
-              _buildGuideStep('3', 'متابعة البلاغ', 'تابع حالة البلاغ من قسم التقارير'),
-              _buildGuideStep('4', 'التواصل مع الدعم', 'استخدم قسم الدعم للتواصل الفوري'),
-              _buildGuideStep('5', 'تصدير التقارير', 'احفظ التقارير بصيغة PDF للمراجعة'),
+              _buildGuideStep(
+                '1',
+                'تسجيل الدخول',
+                'ادخل بيانات الدخول الصحيحة للوصول للنظام',
+              ),
+              _buildGuideStep(
+                '2',
+                'الإبلاغ عن مشكلة',
+                'اختر نوع المشكلة واملأ التفاصيل المطلوبة',
+              ),
+              _buildGuideStep(
+                '3',
+                'متابعة البلاغ',
+                'تابع حالة البلاغ من قسم التقارير',
+              ),
+              _buildGuideStep(
+                '4',
+                'التواصل مع الدعم',
+                'استخدم قسم الدعم للتواصل الفوري',
+              ),
+              _buildGuideStep(
+                '5',
+                'تصدير التقارير',
+                'احفظ التقارير بصيغة PDF للمراجعة',
+              ),
             ],
           ),
         ),
@@ -8434,7 +8878,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           ),
           ElevatedButton(
             onPressed: () => _downloadUserGuide(),
-            style: ElevatedButton.styleFrom(backgroundColor: widget.primaryColor),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.primaryColor,
+            ),
             child: Text('تحميل الدليل'),
           ),
         ],
@@ -8550,9 +8996,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             height: 50,
             decoration: BoxDecoration(
               color: widget.cardColor,
-              border: Border(
-                bottom: BorderSide(color: widget.borderColor),
-              ),
+              border: Border(bottom: BorderSide(color: widget.borderColor)),
             ),
             child: Row(
               children: [
@@ -8567,10 +9011,10 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             child: IndexedStack(
               index: _selectedTab,
               children: [
-                _buildHelpTab(),      // تبويب المساعدة
-                _buildSupportTab(),   // تبويب الدعم
-                _buildContactTab(),   // تبويب اتصل بنا
-                _buildAboutTab(),     // تبويب عن التطبيق
+                _buildHelpTab(), // تبويب المساعدة
+                _buildSupportTab(), // تبويب الدعم
+                _buildContactTab(), // تبويب اتصل بنا
+                _buildAboutTab(), // تبويب عن التطبيق
               ],
             ),
           ),
@@ -8582,7 +9026,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   // دالة بناء زر التبويب
   Widget _buildTabButton(String title, int index) {
     bool isSelected = _selectedTab == index;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -8605,7 +9049,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
-                color: isSelected ? widget.primaryColor : widget.textSecondaryColor,
+                color: isSelected
+                    ? widget.primaryColor
+                    : widget.textSecondaryColor,
               ),
             ),
           ),
@@ -8631,9 +9077,15 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'ابحث في المساعدة...',
-                prefixIcon: Icon(Icons.search_rounded, color: widget.textSecondaryColor),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: widget.textSecondaryColor,
+                ),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
             ),
           ),
@@ -8650,7 +9102,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             ),
           ),
           SizedBox(height: 12),
-          
+
           ..._commonProblems.map((problem) => _buildProblemCard(problem)),
 
           SizedBox(height: 20),
@@ -8669,13 +9121,16 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               ),
               TextButton(
                 onPressed: _openFAQDetail,
-                child: Text('عرض الكل', style: TextStyle(color: widget.primaryColor)),
+                child: Text(
+                  'عرض الكل',
+                  style: TextStyle(color: widget.primaryColor),
+                ),
               ),
             ],
           ),
-          
+
           SizedBox(height: 12),
-          
+
           ..._faqs.take(3).map((faq) => _buildFAQItem(faq)),
 
           SizedBox(height: 20),
@@ -8759,7 +9214,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                     color: widget.primaryColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.chat_rounded, color: widget.primaryColor, size: 30),
+                  child: Icon(
+                    Icons.chat_rounded,
+                    color: widget.primaryColor,
+                    size: 30,
+                  ),
                 ),
                 SizedBox(height: 16),
                 Text(
@@ -8944,12 +9403,24 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildSocialMediaButton('فيسبوك', Icons.facebook_rounded, Color(0xFF1877F2), 
-                  () => _openSocialMedia('facebook')),
-              _buildSocialMediaButton('تويتر', Icons.camera_alt_rounded, Color(0xFF1DA1F2), 
-                  () => _openSocialMedia('twitter')),
-              _buildSocialMediaButton('يوتيوب', Icons.video_library_rounded, Color(0xFFFF0000), 
-                  () => _openSocialMedia('youtube')),
+              _buildSocialMediaButton(
+                'فيسبوك',
+                Icons.facebook_rounded,
+                Color(0xFF1877F2),
+                () => _openSocialMedia('facebook'),
+              ),
+              _buildSocialMediaButton(
+                'تويتر',
+                Icons.camera_alt_rounded,
+                Color(0xFF1DA1F2),
+                () => _openSocialMedia('twitter'),
+              ),
+              _buildSocialMediaButton(
+                'يوتيوب',
+                Icons.video_library_rounded,
+                Color(0xFFFF0000),
+                () => _openSocialMedia('youtube'),
+              ),
             ],
           ),
 
@@ -9063,8 +9534,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                     color: widget.primaryColor,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Icon(Icons.electrical_services_rounded, 
-                      color: Colors.white, size: 40),
+                  child: Icon(
+                    Icons.electrical_services_rounded,
+                    color: Colors.white,
+                    size: 40,
+                  ),
                 ),
                 SizedBox(height: 16),
                 Text(
@@ -9077,9 +9551,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 ),
                 Text(
                   'وزارة الكهرباء - العراق',
-                  style: TextStyle(
-                    color: widget.textSecondaryColor,
-                  ),
+                  style: TextStyle(color: widget.textSecondaryColor),
                 ),
               ],
             ),
@@ -9136,9 +9608,21 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 ),
                 SizedBox(height: 12),
                 _buildTeamMember('فاضل علي', 'مطور رئيسي', Icons.code_rounded),
-                _buildTeamMember('أحمد محمد', 'مصمم واجهات', Icons.design_services_rounded),
-                _buildTeamMember('سارة عبدالله', 'مديرة مشروع', Icons.engineering_rounded),
-                _buildTeamMember('خالد إبراهيم', 'دعم فني', Icons.support_agent_rounded),
+                _buildTeamMember(
+                  'أحمد محمد',
+                  'مصمم واجهات',
+                  Icons.design_services_rounded,
+                ),
+                _buildTeamMember(
+                  'سارة عبدالله',
+                  'مديرة مشروع',
+                  Icons.engineering_rounded,
+                ),
+                _buildTeamMember(
+                  'خالد إبراهيم',
+                  'دعم فني',
+                  Icons.support_agent_rounded,
+                ),
               ],
             ),
           ),
@@ -9165,21 +9649,30 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 ),
                 SizedBox(height: 12),
                 ListTile(
-                  leading: Icon(Icons.privacy_tip_rounded, color: widget.primaryColor),
+                  leading: Icon(
+                    Icons.privacy_tip_rounded,
+                    color: widget.primaryColor,
+                  ),
                   title: Text('سياسة الخصوصية'),
                   trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
                   onTap: () => _openPrivacyPolicy(),
                 ),
                 Divider(),
                 ListTile(
-                  leading: Icon(Icons.description_rounded, color: widget.primaryColor),
+                  leading: Icon(
+                    Icons.description_rounded,
+                    color: widget.primaryColor,
+                  ),
                   title: Text('شروط الاستخدام'),
                   trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
                   onTap: () => _openTermsOfService(),
                 ),
                 Divider(),
                 ListTile(
-                  leading: Icon(Icons.security_rounded, color: widget.primaryColor),
+                  leading: Icon(
+                    Icons.security_rounded,
+                    color: widget.primaryColor,
+                  ),
                   title: Text('الأمان والحماية'),
                   trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
                   onTap: () => _openSecurityInfo(),
@@ -9255,14 +9748,16 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: problem['emergency'] 
+              color: problem['emergency']
                   ? widget.errorColor.withOpacity(0.1)
                   : widget.warningColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               problem['emergency'] ? Icons.warning_rounded : Icons.info_rounded,
-              color: problem['emergency'] ? widget.errorColor : widget.warningColor,
+              color: problem['emergency']
+                  ? widget.errorColor
+                  : widget.warningColor,
               size: 16,
             ),
           ),
@@ -9316,19 +9811,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       margin: EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
         leading: Icon(Icons.help_outline_rounded, color: widget.primaryColor),
-        title: Text(
-          faq['question']!,
-          style: TextStyle(fontSize: 14),
-        ),
+        title: Text(faq['question']!, style: TextStyle(fontSize: 14)),
         children: [
           Padding(
             padding: EdgeInsets.all(16),
             child: Text(
               faq['answer']!,
-              style: TextStyle(
-                color: widget.textSecondaryColor,
-                height: 1.5,
-              ),
+              style: TextStyle(color: widget.textSecondaryColor, height: 1.5),
             ),
           ),
         ],
@@ -9336,7 +9825,12 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     );
   }
 
-  Widget _buildSupportOption(IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _buildSupportOption(
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -9351,10 +9845,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
               SizedBox(height: 4),
               Text(
@@ -9401,7 +9892,12 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     );
   }
 
-  Widget _buildSocialMediaButton(String platform, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildSocialMediaButton(
+    String platform,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return Column(
       children: [
         Container(
@@ -9429,10 +9925,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(day, style: TextStyle(color: widget.textColor)),
-          Text(hours, style: TextStyle(
-            color: widget.textSecondaryColor,
-            fontWeight: FontWeight.bold,
-          )),
+          Text(
+            hours,
+            style: TextStyle(
+              color: widget.textSecondaryColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -9445,10 +9944,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: widget.textSecondaryColor)),
-          Text(value, style: TextStyle(
-            color: widget.textColor,
-            fontWeight: FontWeight.bold,
-          )),
+          Text(
+            value,
+            style: TextStyle(
+              color: widget.textColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -9596,7 +10098,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: widget.primaryColor),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.primaryColor,
+            ),
             child: Text('حجز'),
           ),
         ],
@@ -9612,10 +10116,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       lastDate: DateTime.now().add(Duration(days: 30)),
     ).then((date) {
       if (date != null) {
-        showTimePicker(
-          context: context,
-          initialTime: TimeOfDay.now(),
-        );
+        showTimePicker(context: context, initialTime: TimeOfDay.now());
       }
     });
   }
@@ -9682,7 +10183,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         url = 'https://wa.me/9647862268894';
         break;
     }
-    
+
     // ignore: body_might_complete_normally_catch_error
     launch(url).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -9714,8 +10215,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       builder: (context) => AlertDialog(
         title: Text('سياسة الخصوصية'),
         content: SingleChildScrollView(
-          child: Text(
-            '''
+          child: Text('''
             سياسة الخصوصية لنظام إبلاغات الكهرباء
             
             1. جمع المعلومات:
@@ -9739,9 +10239,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             - حق الاعتراض على المعالجة
             
             تاريخ آخر تحديث: 2024-01-25
-            ''',
-            style: TextStyle(fontSize: 12),
-          ),
+            ''', style: TextStyle(fontSize: 12)),
         ),
         actions: [
           TextButton(
@@ -9750,7 +10248,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           ),
           ElevatedButton(
             onPressed: () => _downloadPrivacyPolicy(),
-            style: ElevatedButton.styleFrom(backgroundColor: widget.primaryColor),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.primaryColor,
+            ),
             child: Text('تحميل'),
           ),
         ],
@@ -9782,7 +10282,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         backgroundColor: widget.primaryColor,
       ),
     );
-    
+
     Future.delayed(Duration(seconds: 2), () {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -9903,7 +10403,10 @@ class LiveSupportChatScreen extends StatefulWidget {
   final Color primaryColor;
   final Color secondaryColor;
 
-  LiveSupportChatScreen({required this.primaryColor, required this.secondaryColor});
+  LiveSupportChatScreen({
+    required this.primaryColor,
+    required this.secondaryColor,
+  });
 
   @override
   _LiveSupportChatScreenState createState() => _LiveSupportChatScreenState();
@@ -9916,8 +10419,8 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
       'text': 'مرحباً! أنا فاضل من فريق الدعم الفني، كيف يمكنني مساعدتك اليوم؟',
       'isUser': false,
       'time': 'الآن',
-      'sender': 'فاضل علي - الدعم الفني'
-    }
+      'sender': 'فاضل علي - الدعم الفني',
+    },
   ];
 
   void _sendMessage() {
@@ -9929,7 +10432,7 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
         'text': message,
         'isUser': true,
         'time': 'الآن',
-        'sender': 'أنت'
+        'sender': 'أنت',
       });
     });
 
@@ -9943,7 +10446,7 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
             'text': _getResponse(message),
             'isUser': false,
             'time': 'الآن',
-            'sender': 'فاضل علي - الدعم الفني'
+            'sender': 'فاضل علي - الدعم الفني',
           });
         });
       }
@@ -9970,7 +10473,7 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
         'text': response,
         'isUser': true,
         'time': 'الآن',
-        'sender': 'أنت'
+        'sender': 'أنت',
       });
     });
 
@@ -9978,10 +10481,11 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
       if (mounted) {
         setState(() {
           _messages.add({
-            'text': 'شكراً للمعلومات. سأقوم بمتابعة الأمر مع القسم المختص وسأعود إليك بالتحديثات.',
+            'text':
+                'شكراً للمعلومات. سأقوم بمتابعة الأمر مع القسم المختص وسأعود إليك بالتحديثات.',
             'isUser': false,
             'time': 'الآن',
-            'sender': 'فاضل علي - الدعم الفني'
+            'sender': 'فاضل علي - الدعم الفني',
           });
         });
       }
@@ -10055,8 +10559,14 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('فاضل علي - الدعم الفني', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text('متخصص في مشاكل الكهرباء والبلاغات', style: TextStyle(fontSize: 12)),
+                      Text(
+                        'فاضل علي - الدعم الفني',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'متخصص في مشاكل الكهرباء والبلاغات',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ],
                   ),
                 ),
@@ -10066,7 +10576,10 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
                     color: Colors.green,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text('متصل', style: TextStyle(color: Colors.white, fontSize: 10)),
+                  child: Text(
+                    'متصل',
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                  ),
                 ),
               ],
             ),
@@ -10109,7 +10622,10 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.attach_file_rounded, color: widget.primaryColor),
+                  icon: Icon(
+                    Icons.attach_file_rounded,
+                    color: widget.primaryColor,
+                  ),
                   onPressed: _attachFile,
                 ),
                 Expanded(
@@ -10122,7 +10638,10 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                     ),
                   ),
                 ),
@@ -10142,19 +10661,27 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: message['isUser'] ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: message['isUser']
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!message['isUser'])
             CircleAvatar(
               backgroundColor: widget.primaryColor,
               radius: 16,
-              child: Icon(Icons.support_agent_rounded, color: Colors.white, size: 14),
+              child: Icon(
+                Icons.support_agent_rounded,
+                color: Colors.white,
+                size: 14,
+              ),
             ),
           SizedBox(width: 8),
           Flexible(
             child: Column(
-              crossAxisAlignment: message['isUser'] ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: message['isUser']
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 if (!message['isUser'])
                   Text(
@@ -10164,7 +10691,7 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
                 Container(
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: message['isUser'] 
+                    color: message['isUser']
                         ? widget.primaryColor.withOpacity(0.9)
                         : Colors.grey[100],
                     borderRadius: BorderRadius.circular(16),
@@ -10184,8 +10711,7 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
               ],
             ),
           ),
-          if (message['isUser'])
-            SizedBox(width: 8),
+          if (message['isUser']) SizedBox(width: 8),
           if (message['isUser'])
             CircleAvatar(
               backgroundColor: widget.secondaryColor,
@@ -10223,6 +10749,7 @@ class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
     // Implementation for file attachment
   }
 }
+
 // شاشة الإعدادات الكاملة
 class SettingsScreen extends StatefulWidget {
   final Color primaryColor;
@@ -10276,9 +10803,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'autoSync': _autoSync,
       'language': _language,
     };
-    
+
     widget.onSettingsChanged(settings);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('تم حفظ الإعدادات بنجاح'),
@@ -10292,10 +10819,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+        final themeProvider = Provider.of<ThemeProvider>(
+          context,
+          listen: false,
+        );
         return AlertDialog(
-          backgroundColor: themeProvider.isDarkMode ? widget.darkCardColor : widget.cardColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: themeProvider.isDarkMode
+              ? widget.darkCardColor
+              : widget.cardColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Row(
             children: [
               Icon(Icons.restart_alt_rounded, color: widget.primaryColor),
@@ -10306,13 +10840,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Text(
             'هل أنت متأكد من أنك تريد إعادة جميع الإعدادات إلى القيم الافتراضية؟',
             style: TextStyle(
-              color: themeProvider.isDarkMode ? widget.darkTextColor : widget.textColor,
+              color: themeProvider.isDarkMode
+                  ? widget.darkTextColor
+                  : widget.textColor,
             ),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('إلغاء', style: TextStyle(color: widget.textSecondaryColor)),
+              child: Text(
+                'إلغاء',
+                style: TextStyle(color: widget.textSecondaryColor),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
@@ -10325,9 +10864,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _autoSync = true;
                   _language = 'العربية';
                 });
-                
+
                 themeProvider.toggleTheme(false);
-                
+
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -10398,12 +10937,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSettingsSection('الإشعارات', Icons.notifications_rounded, themeProvider),
+                  _buildSettingsSection(
+                    'الإشعارات',
+                    Icons.notifications_rounded,
+                    themeProvider,
+                  ),
                   _buildSettingSwitch(
                     'تفعيل الإشعارات',
                     'استلام إشعارات حول الفواتير والتحديثات',
                     _notificationsEnabled,
-                    (bool value) => setState(() => _notificationsEnabled = value),
+                    (bool value) =>
+                        setState(() => _notificationsEnabled = value),
                     themeProvider,
                   ),
                   _buildSettingSwitch(
@@ -10422,10 +10966,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
 
                   SizedBox(height: 24),
-                  _buildSettingsSection('المظهر', Icons.palette_rounded, themeProvider),
-                  
+                  _buildSettingsSection(
+                    'المظهر',
+                    Icons.palette_rounded,
+                    themeProvider,
+                  ),
+
                   _buildDarkModeSwitch(themeProvider),
-                  
+
                   _buildSettingDropdown(
                     'اللغة',
                     _language,
@@ -10433,9 +10981,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     (String? value) => setState(() => _language = value!),
                     themeProvider,
                   ),
-                  
+
                   SizedBox(height: 24),
-                  _buildSettingsSection('حول التطبيق', Icons.info_rounded, themeProvider),
+                  _buildSettingsSection(
+                    'حول التطبيق',
+                    Icons.info_rounded,
+                    themeProvider,
+                  ),
                   _buildAboutCard(themeProvider),
 
                   SizedBox(height: 32),
@@ -10447,7 +10999,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: widget.primaryColor,
                             foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 40,
+                              vertical: 12,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -10474,19 +11029,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
   Widget _buildDarkModeSwitch(ThemeProvider themeProvider) {
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: themeProvider.isDarkMode ? widget.darkCardColor : widget.cardColor,
+        color: themeProvider.isDarkMode
+            ? widget.darkCardColor
+            : widget.cardColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: Offset(0, 2),
-                      ),
+          ),
         ],
       ),
       child: Row(
@@ -10495,17 +11053,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? Colors.amber.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+              color: themeProvider.isDarkMode
+                  ? Colors.amber.withOpacity(0.2)
+                  : Colors.grey.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              themeProvider.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+              themeProvider.isDarkMode
+                  ? Icons.dark_mode_rounded
+                  : Icons.light_mode_rounded,
               color: themeProvider.isDarkMode ? Colors.amber : Colors.grey,
               size: 22,
             ),
           ),
           SizedBox(width: 12),
-          
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -10515,21 +11077,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
-                    color: themeProvider.isDarkMode ? widget.darkTextColor : widget.textColor,
+                    color: themeProvider.isDarkMode
+                        ? widget.darkTextColor
+                        : widget.textColor,
                   ),
                 ),
                 SizedBox(height: 4),
                 Text(
-                  themeProvider.isDarkMode ? 'مفعل - استمتع بتجربة مريحة للعين' : 'معطل - استمتع بالمظهر الافتراضي',
+                  themeProvider.isDarkMode
+                      ? 'مفعل - استمتع بتجربة مريحة للعين'
+                      : 'معطل - استمتع بالمظهر الافتراضي',
                   style: TextStyle(
                     fontSize: 12,
-                    color: themeProvider.isDarkMode ? widget.darkTextSecondaryColor : widget.textSecondaryColor,
+                    color: themeProvider.isDarkMode
+                        ? widget.darkTextSecondaryColor
+                        : widget.textSecondaryColor,
                   ),
                 ),
               ],
             ),
           ),
-          
+
           Switch(
             value: themeProvider.isDarkMode,
             onChanged: (value) {
@@ -10545,7 +11113,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSettingsSection(String title, IconData icon, ThemeProvider themeProvider) {
+  Widget _buildSettingsSection(
+    String title,
+    IconData icon,
+    ThemeProvider themeProvider,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -10565,7 +11137,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: themeProvider.isDarkMode ? widget.darkTextColor : widget.textColor,
+              color: themeProvider.isDarkMode
+                  ? widget.darkTextColor
+                  : widget.textColor,
             ),
           ),
         ],
@@ -10573,13 +11147,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSettingSwitch(String title, String subtitle, bool value, Function(bool) onChanged, ThemeProvider themeProvider) {
+  Widget _buildSettingSwitch(
+    String title,
+    String subtitle,
+    bool value,
+    Function(bool) onChanged,
+    ThemeProvider themeProvider,
+  ) {
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: themeProvider.isDarkMode ? widget.darkCardColor : widget.cardColor,
+        color: themeProvider.isDarkMode
+            ? widget.darkCardColor
+            : widget.cardColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -10599,7 +11181,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
-                    color: themeProvider.isDarkMode ? widget.darkTextColor : widget.textColor,
+                    color: themeProvider.isDarkMode
+                        ? widget.darkTextColor
+                        : widget.textColor,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -10607,7 +11191,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: themeProvider.isDarkMode ? widget.darkTextSecondaryColor : widget.textSecondaryColor,
+                    color: themeProvider.isDarkMode
+                        ? widget.darkTextSecondaryColor
+                        : widget.textSecondaryColor,
                   ),
                 ),
               ],
@@ -10623,13 +11209,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSettingDropdown(String title, String value, List<String> items, Function(String?) onChanged, ThemeProvider themeProvider) {
+  Widget _buildSettingDropdown(
+    String title,
+    String value,
+    List<String> items,
+    Function(String?) onChanged,
+    ThemeProvider themeProvider,
+  ) {
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: themeProvider.isDarkMode ? widget.darkCardColor : widget.cardColor,
+        color: themeProvider.isDarkMode
+            ? widget.darkCardColor
+            : widget.cardColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -10646,7 +11240,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
-                color: themeProvider.isDarkMode ? widget.darkTextColor : widget.textColor,
+                color: themeProvider.isDarkMode
+                    ? widget.darkTextColor
+                    : widget.textColor,
               ),
             ),
           ),
@@ -10654,7 +11250,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? Colors.white10 : Colors.grey[50],
+              color: themeProvider.isDarkMode
+                  ? Colors.white10
+                  : Colors.grey[50],
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: widget.primaryColor.withOpacity(0.3)),
             ),
@@ -10667,13 +11265,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text(
                     item,
                     style: TextStyle(
-                      color: themeProvider.isDarkMode ? widget.darkTextColor : widget.textColor,
+                      color: themeProvider.isDarkMode
+                          ? widget.darkTextColor
+                          : widget.textColor,
                     ),
                   ),
                 );
               }).toList(),
               underline: SizedBox(),
-              icon: Icon(Icons.arrow_drop_down_rounded, color: widget.primaryColor),
+              icon: Icon(
+                Icons.arrow_drop_down_rounded,
+                color: widget.primaryColor,
+              ),
             ),
           ),
         ],
@@ -10686,7 +11289,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: themeProvider.isDarkMode ? widget.darkCardColor : widget.cardColor,
+        color: themeProvider.isDarkMode
+            ? widget.darkCardColor
+            : widget.cardColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -10702,13 +11307,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildAboutRow('المطور', 'وزارة الكهرباء - العراق', themeProvider),
           _buildAboutRow('رقم الترخيص', 'MOE-2024-001', themeProvider),
           _buildAboutRow('آخر تحديث', '2024-03-15', themeProvider),
-          _buildAboutRow('البريد الإلكتروني', 'support@electric.gov.iq', themeProvider),
+          _buildAboutRow(
+            'البريد الإلكتروني',
+            'support@electric.gov.iq',
+            themeProvider,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAboutRow(String title, String value, ThemeProvider themeProvider) {
+  Widget _buildAboutRow(
+    String title,
+    String value,
+    ThemeProvider themeProvider,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -10718,13 +11331,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title,
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              color: themeProvider.isDarkMode ? widget.darkTextColor : widget.textColor,
+              color: themeProvider.isDarkMode
+                  ? widget.darkTextColor
+                  : widget.textColor,
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              color: themeProvider.isDarkMode ? widget.darkTextSecondaryColor : widget.textSecondaryColor,
+              color: themeProvider.isDarkMode
+                  ? widget.darkTextSecondaryColor
+                  : widget.textSecondaryColor,
             ),
           ),
         ],
@@ -10732,6 +11349,93 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
+
+// نموذج إرسال بلاغ جديد
+class ReportService {
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  Future<Map<String, dynamic>> submitReport({
+    required String citizenId,
+    required String reportTypeCode,
+    required String description,
+    required String location,
+    String? area,
+    double? latitude,
+    double? longitude,
+    List<File>? images,
+    Map<String, dynamic>? additionalData,
+  }) async {
+    try {
+      // 1. الحصول على نوع البلاغ
+      final reportType = await _supabase
+          .from('report_types')
+          .select()
+          .eq('code', reportTypeCode)
+          .single();
+
+      // 2. إدخال البلاغ
+      final reportData = {
+        'report_type_id': reportType['id'],
+        'citizen_id': citizenId,
+        'citizen_name': 'اسم المواطن', // من الـ Profile
+        'citizen_phone': 'رقم الهاتف',
+        'location_description': location,
+        'area': area,
+        'latitude': latitude,
+        'longitude': longitude,
+        'description': description,
+        'priority': reportType['priority_level'],
+        'additional_data': additionalData ?? {},
+      };
+
+      final report = await _supabase
+          .from('reports')
+          .insert(reportData)
+          .select()
+          .single();
+
+      // 3. رفع الصور إذا وجدت
+      if (images != null && images.isNotEmpty) {
+        for (var i = 0; i < images.length; i++) {
+          final image = images[i];
+          final fileName = '${report['report_number']}_${i + 1}.jpg';
+          final filePath =
+              '${DateTime.now().year}/${DateTime.now().month}/${DateTime.now().day}/${report['report_number']}/images/$fileName';
+
+          // رفع الصورة
+          await _supabase.storage
+              .from('report-attachments')
+              .upload(filePath, image);
+
+          // الحصول على الرابط العام
+          final imageUrl = _supabase.storage
+              .from('report-attachments')
+              .getPublicUrl(filePath);
+
+          // حفظ معلومات الصورة في قاعدة البيانات
+          await _supabase.from('report_attachments').insert({
+            'report_id': report['id'],
+            'file_url': imageUrl,
+            'file_type': 'image',
+            'file_name': fileName,
+            'is_primary': i == 0,
+          });
+        }
+      }
+
+      // 4. تعيين البلاغ لموظف تلقائياً
+      await _supabase.rpc(
+        'assign_report_to_employee',
+        params: {'report_id_param': report['id']},
+      );
+
+      return report;
+    } catch (e) {
+      throw Exception('فشل إرسال البلاغ: $e');
+    }
+  }
+}
+
 // === أضف هذا الكلاس هنا ===
 class EmergencyReport {
   final String customerName;

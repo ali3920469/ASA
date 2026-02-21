@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'points_service.dart'; // استيراد خدمة النقاط
-import 'transaction_history_screen.dart'; // استيراد شاشة سجل المعاملات
+import 'points_service.dart';
+import 'transaction_history_screen.dart';
 import 'package:mang_mu/screens/zemp_and_citizen/mainscren.dart';
 import 'edit_profile_screen.dart';
 import 'api_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
   static const String screen = 'profile_screen';
@@ -15,7 +16,7 @@ class ProfileScreen extends StatefulWidget {
   final Color textSecondaryColor;
   final Color errorColor;
   final VoidCallback? onClose;
-  final Function(Map<String, dynamic>)? onProfileUpdated; // أضف هذا
+  final Function(Map<String, dynamic>)? onProfileUpdated;
 
   const ProfileScreen({
     super.key,
@@ -26,7 +27,7 @@ class ProfileScreen extends StatefulWidget {
     required this.textSecondaryColor,
     required this.errorColor,
     this.onClose,
-    this.onProfileUpdated, // أضف هذا
+    this.onProfileUpdated,
   });
 
   @override
@@ -37,18 +38,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final PointsService _pointsService = PointsService();
   int _userPoints = 0;
   bool _isLoadingPoints = true;
-
-  void _updateUserProfile(Map<String, dynamic> updatedProfile) {
-    setState(() {
-      // هنا يمكنك تحديث widget.userProfile إذا كان قابلاً للتعديل
-      // أو إعادة بناء الشاشة بالبيانات الجديدة
-    });
-  }
+  bool _isLoadingProfile = true;
+  Map<String, dynamic>? _userProfile;
 
   @override
   void initState() {
     super.initState();
     _loadUserPoints();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    setState(() => _isLoadingProfile = true);
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        setState(() => _isLoadingProfile = false);
+        return;
+      }
+
+      // جلب البيانات من shared schema
+      final response = await Supabase.instance.client
+          .schema('shared')
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .single();
+
+      print('✅ تم جلب البيانات من shared schema: $response');
+
+      if (mounted) {
+        setState(() {
+          _userProfile = response;
+          _isLoadingProfile = false;
+        });
+      }
+    } catch (e) {
+      print('❌ خطأ في تحميل الملف الشخصي: $e');
+      if (mounted) {
+        setState(() => _isLoadingProfile = false);
+      }
+    }
   }
 
   Future<void> _loadUserPoints() async {
@@ -66,12 +97,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Widget _buildProfileAvatar() {
-    final selfieImage = widget.userProfile?['selfie_image'];
+  void _handleProfileUpdated(Map<String, dynamic> updatedProfile) {
+    setState(() {
+      _userProfile = updatedProfile;
+    });
+    // تحديث البيانات في الـ parent إذا كان موجوداً
+    if (widget.onProfileUpdated != null) {
+      widget.onProfileUpdated!(updatedProfile);
+    }
+  }
 
-    if (selfieImage != null) {
+  // دالة للحصول على البيانات الحالية (من _userProfile أو widget.userProfile)
+  Map<String, dynamic> get _currentProfile {
+    return _userProfile ?? widget.userProfile ?? {};
+  }
+
+  Widget _buildProfileAvatar() {
+    final profile = _currentProfile;
+    final selfieImage = profile['selfie_image'];
+
+    if (selfieImage != null && selfieImage.toString().isNotEmpty) {
       final selfieString = selfieImage.toString();
-      if (selfieString.isNotEmpty && selfieString.startsWith('http')) {
+      if (selfieString.startsWith('http')) {
         return Container(
           width: 70,
           height: 70,
@@ -97,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     strokeWidth: 2,
                     value: loadingProgress.expectedTotalBytes != null
                         ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
+                            loadingProgress.expectedTotalBytes!
                         : null,
                     color: widget.primaryColor,
                   ),
@@ -135,9 +182,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final phone = widget.userProfile?['phone'];
-    final phoneString = phone?.toString();
-    final hasPhone = phoneString != null && phoneString.isNotEmpty;
+    if (_isLoadingProfile) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: widget.primaryColor,
+          ),
+        ),
+      );
+    }
+
+    final profile = _currentProfile;
+    final phone = profile['phone']?.toString() ?? '';
+    final hasPhone = phone.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -207,7 +271,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: Row(
                       children: [
-                        // عرض صورة السيلفي أو الأيقونة الافتراضية
                         _buildProfileAvatar(),
                         const SizedBox(width: 16),
                         Expanded(
@@ -215,7 +278,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.userProfile?['full_name'] ?? 'غير معروف',
+                                profile['full_name'] ?? 'غير معروف',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -224,17 +287,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                widget.userProfile?['email'] ?? 'غير معروف',
+                                profile['email'] ?? 'غير معروف',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: widget.textSecondaryColor,
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              // عرض رقم الهاتف إذا كان موجوداً
                               if (hasPhone)
                                 Text(
-                                  phoneString!,
+                                  phone,
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: widget.textSecondaryColor,
@@ -248,12 +310,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: _getStatusColor(
-                                    widget.userProfile?['status'],
+                                    profile['status'],
                                   ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  _getStatusText(widget.userProfile?['status']),
+                                  _getStatusText(profile['status']),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Colors.white,
@@ -277,27 +339,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildProfileInfoItem(
                     Icons.credit_card,
                     'رقم الهوية',
-                    widget.userProfile?['id_number'] ?? 'غير معروف',
+                    profile['id_number']?.toString() ?? 'غير معروف',
                   ),
                   _buildProfileInfoItem(
                     Icons.home,
                     'رقم الدار/المنزل',
-                    widget.userProfile?['house_number'] ?? 'غير معروف',
+                    profile['house_number']?.toString() ?? 'غير معروف',
                   ),
                   _buildProfileInfoItem(
                     Icons.phone,
                     'رقم الهاتف',
-                    widget.userProfile?['phone'] ?? 'غير معروف',
+                    profile['phone']?.toString() ?? 'غير معروف',
                   ),
                   _buildProfileInfoItem(
                     Icons.location_on,
                     'الموقع',
-                    widget.userProfile?['location'] ?? 'غير معروف',
+                    profile['location']?.toString() ?? 'غير معروف',
                   ),
                   _buildProfileInfoItem(
                     Icons.calendar_today,
                     'تاريخ التسجيل',
-                    _formatDate(widget.userProfile?['created_at']),
+                    _formatDate(profile['created_at']),
                   ),
 
                   const SizedBox(height: 24),
@@ -348,18 +410,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => EditProfileScreen(
-                            userProfile: widget.userProfile ?? {},
+                            userProfile: profile,
                             primaryColor: widget.primaryColor,
                             textColor: widget.textColor,
                             textSecondaryColor: widget.textSecondaryColor,
-                            onProfileUpdated: (updatedProfile) {
-                              // تحديث البيانات في الشاشة الحالية
-                              // يمكنك استخدام setState أو Provider أو أي طريقة إدارة حالة تستخدمها
-                              // هذا مثال باستخدام callback للـ parent
-                              if (widget.onProfileUpdated != null) {
-                                widget.onProfileUpdated!(updatedProfile);
-                              }
-                            },
+                            onProfileUpdated: _handleProfileUpdated,
                           ),
                         ),
                       );
@@ -373,8 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () async {
-                        bool confirm =
-                            await showDialog(
+                        bool confirm = await showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
                                 title: const Text('تأكيد تسجيل الخروج'),
@@ -402,14 +456,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             false;
 
                         if (confirm && context.mounted) {
-                          // تنفيذ تسجيل الخروج
                           await widget.onSignOut();
-
-                          // العودة إلى الشاشة الرئيسية وإزالة كل الشاشات الأخرى
                           Navigator.pushNamedAndRemoveUntil(
                             context,
-                            Mainscren.screenroot, // اسم الشاشة الرئيسية
-                            (route) => false, // إزالة كل الشاشات
+                            Mainscren.screenroot,
+                            (route) => false,
                           );
                         }
                       },
@@ -648,21 +699,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return 'مرفوض';
       default:
         return 'غير معروف';
-    }
-  }
-
-  String _getCreditStatus(String? creditStatus) {
-    switch (creditStatus) {
-      case 'excellent':
-        return 'ممتاز';
-      case 'good':
-        return 'جيد';
-      case 'fair':
-        return 'متوسط';
-      case 'poor':
-        return 'ضعيف';
-      default:
-        return 'غير محدد';
     }
   }
 

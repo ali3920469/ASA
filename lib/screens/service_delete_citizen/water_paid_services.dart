@@ -1,27 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../citizen/Shared Services Citizen/payment_screen.dart';
+import 'dart:async';
+import 'employee_selection_screen.dart';
 
-import '../Shared Services Citizen/payment_screen.dart'; // أخفِ ServiceItem من هذا الملف
-import 'dart:async'; // لإضافة Timer
-import '../Shared Services Citizen/employee_selection_screen.dart';
-import 'dart:convert';
-import '../Shared Services Citizen/payment_process_screen.dart';
+import '../citizen/Shared Services Citizen/payment_process_screen.dart';
+import 'package:intl/intl.dart'; // أضف هذا السطر
 
-class ElectricityPaidServices extends PaidServicesScreen {
-  const ElectricityPaidServices({super.key})
+
+
+
+
+class WaterPaidServices extends PaidServicesScreen {
+  const WaterPaidServices({super.key})
     : super(
-        serviceName: 'خدمات الكهرباء المدفوعة',
-        serviceColor: const Color(0xFF0D47A1),
-        serviceGradient: const [Color(0xFF0D47A1), Color(0xFF1976D2)],
-        serviceTitle: 'الكهرباء',
+        serviceName: 'خدمات المياه المدفوعة',
+        serviceColor: const Color(0xFF29B6F6),
+        serviceGradient: const [Color(0xFF29B6F6), Color(0xFF4FC3F7)],
+        serviceTitle: 'الماء',
       );
 
   @override
-  State<ElectricityPaidServices> createState() =>
-      _ElectricityPaidServicesState();
+  State<WaterPaidServices> createState() => _WaterPaidServicesState();
 }
 
-class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
+class _WaterPaidServicesState extends State<WaterPaidServices> {
   final SupabaseClient _supabase = Supabase.instance.client; // أضف هذا السطر
 
   int _currentIndex = 0;
@@ -123,7 +126,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
                   children: [
                     SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
-                      child: _buildElectricityPaidServices(),
+                      child: _buildWaterPaidServices(),
                     ),
                     _buildRequestedServicesTab(),
                   ],
@@ -144,7 +147,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
       ),
     );
   }
-  // أضف هذا في class _ElectricityPaidServicesState
+  // أضف هذا في class _WaterPaidServicesState
 
   // 🔥 متغيرات جديدة للإشعارات
   int _notificationCount = 3; // عدد الإشعارات غير المقروءة
@@ -155,8 +158,8 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     ServiceNotification(
       id: '1',
       title: 'رد على طلبك للخدمة المخصصة',
-      message: 'تم تقديم عرض لخدمة "تركيب نظام إنذار" بمبلغ 120 د.ع',
-      serviceName: 'تركيب نظام إنذار ضد الحريق',
+      message: 'تم تقديم عرض لخدمة "تركيب نظام فلترة" بمبلغ 120 د.ع',
+      serviceName: 'تركيب نظام فلترة المياه',
       employeeName: 'أحمد محمد',
       price: 120.0,
       timestamp: 'قبل ساعتين',
@@ -165,8 +168,8 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     ServiceNotification(
       id: '2',
       title: 'عروض جديدة لخدمتك المخصصة',
-      message: '3 فنيين تقدموا بعروض لخدمة "تمديدات كهربائية إضافية"',
-      serviceName: 'تمديدات كهربائية إضافية',
+      message: '3 فنيين تقدموا بعروض لخدمة "تمديدات مائية إضافية"',
+      serviceName: 'تمديدات مائية إضافية',
       employeeName: 'فريق متعدد',
       price: 85.0,
       timestamp: 'قبل 5 ساعات',
@@ -175,8 +178,8 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     ServiceNotification(
       id: '3',
       title: 'عرض مقترح لخدمتك',
-      message: 'عرض لخدمة "صيانة لوحة كهرباء" بمبلغ 180 د.ع مع ضمان 6 أشهر',
-      serviceName: 'صيانة لوحة كهرباء',
+      message: 'عرض لخدمة "صيانة مضخة المياه" بمبلغ 180 د.ع مع ضمان 6 أشهر',
+      serviceName: 'صيانة مضخة المياه',
       employeeName: 'علي حسن',
       price: 180.0,
       timestamp: 'أمس',
@@ -557,6 +560,8 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     );
   }
 
+  //*ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+
   // 🔥 دالة مساعدة لبناء صف تفاصيل
   Widget _buildDetailRow(String label, String value) {
     return Padding(
@@ -603,46 +608,46 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     });
   }
 
-  // أضف هذا في class _ElectricityPaidServicesState
+  // أضف هذا في class _WaterPaidServicesState
   final List<Employee> _employees = [
     Employee(
       id: '1',
       name: 'أحمد محمد',
-      specialty: 'فني عدادات ذكية',
+      specialty: 'فني عدادات مياه',
       rating: 4.8,
       completedJobs: 127,
       imageUrl: '',
-      skills: ['تركيب عدادات', 'صيانة لوحات', 'تمديدات'],
+      skills: ['تركيب عدادات', 'صيانة مضخات', 'تمديدات'],
       hourlyRate: 25.0,
     ),
     Employee(
       id: '2',
       name: 'علي حسن',
-      specialty: 'خبير صيانة لوحات',
+      specialty: 'خبير صيانة مضخات',
       rating: 4.6,
       completedJobs: 89,
       imageUrl: '',
-      skills: ['صيانة لوحات كهرباء', 'إصلاح أعطال', 'فحص أنظمة'],
+      skills: ['صيانة مضخات المياه', 'إصلاح أعطال', 'فحص أنظمة'],
       hourlyRate: 30.0,
     ),
     Employee(
       id: '3',
       name: 'محمود خالد',
-      specialty: 'فني تمديدات',
+      specialty: 'فني تمديدات مائية',
       rating: 4.9,
       completedJobs: 156,
       imageUrl: '',
-      skills: ['تمديدات كهربائية', 'تركيب نقاط', 'أسلاك وأنظمة'],
+      skills: ['تمديدات مائية', 'تركيب نقاط', 'أنابيب وأنظمة'],
       hourlyRate: 22.0,
     ),
     Employee(
       id: '4',
       name: 'سامي رضا',
-      specialty: 'خبير أنظمة شمسية',
+      specialty: 'خبير أنظمة فلترة',
       rating: 4.7,
       completedJobs: 93,
       imageUrl: '',
-      skills: ['أنظمة الطاقة الشمسية', 'التحكم الذكي', 'البطاريات'],
+      skills: ['أنظمة فلترة المياه', 'التنقية الذكية', 'معالجة المياه'],
       hourlyRate: 35.0,
     ),
     Employee(
@@ -658,90 +663,55 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     Employee(
       id: '6',
       name: 'عمر ناصر',
-      specialty: 'فني عدادات',
+      specialty: 'فني عدادات مياه',
       rating: 4.8,
       completedJobs: 112,
       imageUrl: '',
-      skills: ['عدادات كهرباء', 'فحص العدادات', 'معايرة الأجهزة'],
+      skills: ['عدادات المياه', 'فحص العدادات', 'معايرة الأجهزة'],
       hourlyRate: 28.0,
     ),
   ];
   // 🔥 استخدام نفس واجهة اختيار الموظفين الكاملة مع دعم الاختيار المتعدد
-  void _showMultiEmployeeSelectionForCustomService() {
-    final currentSelection = _selectedEmployees['خدمة مخصصة'];
-    List<Employee> initialSelection = [];
+ void _showMultiEmployeeSelectionForCustomService() {
+  final currentSelection = _selectedEmployees['خدمة مخصصة'];
+  List<Employee> initialSelection = [];
 
-    // 🔥 التصحيح: التعامل الصحيح مع أنواع البيانات
-    if (currentSelection is List<Employee>) {
-      initialSelection = List.from(currentSelection);
-    } else if (currentSelection is Employee) {
-      // إذا كان هناك موظف واحد فقط، ضعه في قائمة
-      initialSelection = [currentSelection];
-    }
+  // 🔥 تصحيح التعامل مع أنواع البيانات
+  if (currentSelection is List<Employee>) {
+    initialSelection = currentSelection;
+  } else if (currentSelection is Employee) {
+    initialSelection = [currentSelection];
+  }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CustomEmployeeSelectionScreen(
-          serviceTitle: 'خدمة مخصصة',
-          primaryColor: widget.serviceColor,
-          primaryGradient: widget.serviceGradient,
-          initialSelection: initialSelection,
-          employees: _employees,
-          onEmployeesSelected: (selectedEmployees) {
-            // 🔥 التأكد من أن البيانات مرسلة بشكل صحيح
-            setState(() {
-              _selectedEmployees['خدمة مخصصة'] = selectedEmployees;
-            });
-
-            Navigator.pop(context);
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'تم اختيار ${selectedEmployees.length} فني للخدمة المخصصة',
-                ),
-                backgroundColor: Colors.green,
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => CustomEmployeeSelectionScreen(
+        serviceTitle: 'خدمة مخصصة',
+        primaryColor: widget.serviceColor,
+        primaryGradient: widget.serviceGradient,
+        initialSelection: initialSelection,
+        employees: _employees, // 🔥 تأكد من استخدام _employees
+        onEmployeesSelected: (selectedEmployees) {
+          setState(() {
+            _selectedEmployees['خدمة مخصصة'] = selectedEmployees;
+          });
+          
+          Navigator.pop(context);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'تم اختيار ${selectedEmployees.length} فني للخدمة المخصصة',
               ),
-            );
-          },
-        ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        },
       ),
-    );
-  }
-
-  // أضف هذه الدالة المساعدة لبناء النجوم
-  Widget _buildRatingStars(double rating) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        return Icon(
-          index < rating ? Icons.star : Icons.star_border,
-          color: Colors.amber,
-          size: 16,
-        );
-      }),
-    );
-  }
-
-  Future<bool> _hasUserRatedService(String serviceId) async {
-    try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) return false;
-
-      final response = await _supabase
-          .from('employee_ratings')
-          .select()
-          .eq('user_id', user.id)
-          .eq('service_id', serviceId)
-          .maybeSingle();
-
-      return response != null;
-    } catch (e) {
-      return false;
-    }
-  }
-
+    ),
+  );
+}
   void _showRatingDialog(RequestedService service) {
     int selectedRating = 0;
     TextEditingController reviewController = TextEditingController();
@@ -877,31 +847,64 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
       },
     );
   }
+Future<void> _saveRating(
+  RequestedService service,
+  int rating,
+  String review,
+) async {
+  try {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
 
-  Future<void> _saveRating(
-    RequestedService service,
-    int rating,
-    String review,
-  ) async {
-    try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) return;
+    final ratingServiceId = _getRatingServiceId(service.id);
+    final employeeId = service.selectedEmployee?.id ?? 
+                      (service.selectedEmployees?.isNotEmpty == true 
+                        ? service.selectedEmployees!.first.id 
+                        : 'default_1');
+    
+    final employeeName = service.selectedEmployee?.name ?? 
+                       (service.selectedEmployees?.isNotEmpty == true 
+                        ? service.selectedEmployees!.first.name 
+                        : 'فريق المياه');
+    
+    final employeeSpecialty = service.selectedEmployee?.specialty ?? 
+                            (service.selectedEmployees?.isNotEmpty == true 
+                             ? service.selectedEmployees!.first.specialty 
+                             : 'خدمات المياه');
 
-      await _supabase.from('employee_ratings').insert({
-        'user_id': user.id,
-        'service_id': service.id,
-        'employee_id': service.selectedEmployee?.id ?? '',
-        'employee_name': service.selectedEmployee?.name ?? '',
-        'employee_specialty': service.selectedEmployee?.specialty ?? '',
-        'rating': rating,
-        'review_text': review.isNotEmpty ? review : null,
-      });
+    await _supabase.from('employee_ratings').insert({
+      'user_id': user.id,
+      'service_id': ratingServiceId,
+      'service_name': service.name,
+      'employee_id': employeeId,
+      'employee_name': employeeName,
+      'employee_specialty': employeeSpecialty,
+      'rating': rating,
+      'review_text': review.isNotEmpty ? review : null,
+      'created_at': DateTime.now().toIso8601String(),
+    });
 
-      print('✅ تم حفظ التقييم بنجاح');
-    } catch (e) {
-      print('❌ خطأ في حفظ التقييم: $e');
-    }
+    print('✅ تم حفظ التقييم بنجاح للخدمة: ${service.name}');
+    
+    // 🔥 تحديث الواجهة مباشرة
+    setState(() {
+      final index = _requestedServices.indexWhere((s) => s.id == service.id);
+      if (index != -1) {
+        // يمكنك تحديث حالة الخدمة إذا أردت
+        // أو إعادة تحميل الخدمات
+      }
+    });
+
+  } catch (e) {
+    print('❌ خطأ في حفظ التقييم: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('حدث خطأ في حفظ التقييم: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   Widget _buildTabItem(String title, int index) {
     final isSelected = _currentIndex == index;
@@ -1013,6 +1016,8 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     );
   }
 
+  //*qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+
   // 🔥 دالة لبناء تبويب فرعي داخل الخدمات المطلوبة - تصميم جديد
   Widget _buildRequestedSubTabItem(String title, int index) {
     final isSelected = _requestedServicesTabIndex == index;
@@ -1085,241 +1090,323 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
       );
     }
   }
+// استبدل هذه الدالة في ملف المياه
+Widget _buildRequestedServiceCard(RequestedService service) {
+  return FutureBuilder<bool>(
+    future: _hasUserRatedService(service.id),
+    builder: (context, snapshot) {
+      final hasRated = snapshot.data ?? false;
 
-  Widget _buildRequestedServiceCard(RequestedService service) {
-    return FutureBuilder<bool>(
-      future: _hasUserRatedService(service.id),
-      builder: (context, snapshot) {
-        final hasRated = snapshot.data ?? false;
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 2,
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: _getStatusColor(service.status),
-                  width: 4,
-                ),
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 2,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: _getStatusColor(service.status),
+                width: 4,
               ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        service.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(
-                            service.status,
-                          ).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _getStatusColor(service.status),
-                          ),
-                        ),
-                        child: Text(
-                          _getStatusText(service.status),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: _getStatusColor(service.status),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (service.description != null &&
-                      service.description!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        service.description!,
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // رأس الخدمة
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      service.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(Icons.attach_money, size: 16, color: Colors.green),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${service.amount} د.ع',
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(service.status).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _getStatusColor(service.status),
+                        ),
+                      ),
+                      child: Text(
+                        _getStatusText(service.status),
                         style: TextStyle(
+                          fontSize: 12,
+                          color: _getStatusColor(service.status),
                           fontWeight: FontWeight.bold,
-                          color: Colors.green,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.access_time, size: 16, color: Colors.orange),
-                      const SizedBox(width: 4),
-                      Text(
-                        service.requestDate,
-                        style: TextStyle(color: Colors.orange),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+
+                // الوصف
+                if (service.description != null && service.description!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      service.description!,
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
                   ),
-                  if (service.selectedEmployee != null) ...[
-                    const SizedBox(height: 8),
-                    Row(
+
+                const SizedBox(height: 12),
+
+                // السعر والموعد
+                Row(
+                  children: [
+                    Icon(Icons.attach_money, size: 16, color: Colors.green),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${service.amount} د.ع',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(Icons.access_time, size: 16, color: Colors.orange),
+                    const SizedBox(width: 4),
+                    Text(
+                      service.requestDate,
+                      style: TextStyle(color: Colors.orange),
+                    ),
+                  ],
+                ),
+
+                // عرض بيانات الموظفين
+                // 🔥 هذا هو القسم المصحح
+                if (service.selectedEmployee != null || 
+                    (service.selectedEmployees != null && service.selectedEmployees!.isNotEmpty)) 
+                ...[
+                  const SizedBox(height: 8),
+                  _buildEmployeeInfoSection(service),
+                ],
+
+                // تفاصيل الخدمة المخصصة
+                if (service.isCustom && service.customDetails != null && service.customDetails!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
                       children: [
-                        Icon(
-                          Icons.person,
-                          size: 16,
-                          color: widget.serviceColor,
-                        ),
+                        Icon(Icons.info, size: 14, color: Colors.blue),
                         const SizedBox(width: 4),
-                        Text(
-                          'الفني: ${service.selectedEmployee!.name}',
-                          style: TextStyle(color: widget.serviceColor),
+                        Expanded(
+                          child: Text(
+                            service.customDetails!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue[800],
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ],
-                  if (service.isCustom) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info, size: 14, color: Colors.blue),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              service.customDetails ?? '',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue[800],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  // شعار التقييم للخدمات المكتملة
-                  if (service.status == ServiceStatus.completed &&
-                      service.selectedEmployee != null)
-                    Container(
-                      margin: const EdgeInsets.only(top: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: hasRated ? Colors.green[50] : Colors.amber[50],
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: hasRated ? Colors.green : Colors.amber,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            hasRated
-                                ? Icons.check_circle
-                                : Icons.star_rate_rounded,
-                            color: hasRated ? Colors.green : Colors.amber,
-                            size: 28,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  hasRated
-                                      ? 'شكراً لتقييمك الخدمة!'
-                                      : 'كيف كانت تجربتك مع الخدمة؟',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: hasRated
-                                        ? Colors.green[800]
-                                        : Colors.amber[800],
-                                  ),
-                                ),
-                                if (!hasRated)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      'ساعدنا في تحسين خدماتنا من خلال تقييم الفني',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.amber[600],
-                                      ),
-                                    ),
-                                  ),
-                                if (hasRated)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      'تم تسجيل تقييمك بنجاح',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.green[600],
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          // استبدل هذا الجزء في الزر:
-                          if (!hasRated)
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.amber,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              onPressed: () => _showRatingDialog(service),
-                              child: const Text(
-                                'تقييم الآن', // أصلح النص هنا
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+                  ),
                 ],
-              ),
+
+                // قسم التقييم للخدمات المكتملة
+                if (service.status == ServiceStatus.completed)
+                  FutureBuilder<bool>(
+                    future: _hasUserRatedService(service.id),
+                    builder: (context, snapshot) {
+                      final hasRated = snapshot.data ?? false;
+                      
+                      return GestureDetector(
+                        onTap: () {
+                          final hasEmployee = service.selectedEmployee != null || 
+                                            (service.selectedEmployees?.isNotEmpty == true);
+                          
+                          if (!hasEmployee) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('لا يمكن تقييم الخدمة بدون معرفة الفني'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+                          
+                          if (!hasRated) {
+                            _showRatingDialog(service);
+                          }
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: hasRated ? Colors.green[50] : Colors.amber[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: hasRated ? Colors.green : Colors.amber,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                hasRated ? Icons.check_circle : Icons.star_rate_rounded,
+                                color: hasRated ? Colors.green : Colors.amber,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                hasRated ? 'تم التقييم' : 'تقييم الخدمة',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: hasRated ? Colors.green[800] : Colors.amber[800],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      );
+    },
+  );
+}
+// 🔥 دالة مساعدة لعرض معلومات الموظفين
+Widget _buildEmployeeInfoSection(RequestedService service) {
+  // التحقق من نوع بيانات الموظفين
+  final hasSingleEmployee = service.selectedEmployee != null;
+  final hasMultipleEmployees = service.selectedEmployees != null && 
+                               service.selectedEmployees!.isNotEmpty;
+
+  if (hasSingleEmployee) {
+    return Row(
+      children: [
+        Icon(Icons.person, size: 16, color: widget.serviceColor),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'الفني: ${service.selectedEmployee!.name}',
+                style: TextStyle(
+                  color: widget.serviceColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'التخصص: ${service.selectedEmployee!.specialty}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  } else if (hasMultipleEmployees) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.group, size: 16, color: widget.serviceColor),
+            const SizedBox(width: 4),
+            Text(
+              'فريق العمل (${service.selectedEmployees!.length} فني)',
+              style: TextStyle(
+                color: widget.serviceColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          children: service.selectedEmployees!.take(2).map((employee) {
+            return Chip(
+              label: Text(
+                employee.name,
+                style: TextStyle(fontSize: 11),
+              ),
+              backgroundColor: widget.serviceColor.withOpacity(0.1),
+            );
+          }).toList(),
+        ),
+        if (service.selectedEmployees!.length > 2)
+          Text(
+            '+ ${service.selectedEmployees!.length - 2} فنيين آخرين',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[600],
+            ),
+          ),
+      ],
     );
   }
 
+  return SizedBox.shrink();
+}
+// 🔥 دالة للتحقق من بيانات الموظف في الخدمة
+void _debugEmployeeData(RequestedService service) {
+  print('🔍 فحص بيانات الخدمة: ${service.name}');
+  print('   - ID: ${service.id}');
+  print('   - selectedEmployee: ${service.selectedEmployee?.name ?? "NULL"}');
+  print('   - selectedEmployees: ${service.selectedEmployees?.length ?? 0}');
+  
+  if (service.selectedEmployees != null) {
+    for (var emp in service.selectedEmployees!) {
+      print('     • ${emp.name} - ${emp.specialty}');
+    }
+  }
+  
+  print('   - isCustom: ${service.isCustom}');
+}
+
+// 🔥 دالة لتحميل متوسط تقييمات الموظف
+Future<double> _loadEmployeeRating(String employeeId) async {
+  try {
+    final response = await _supabase
+        .from('employee_ratings')
+        .select('rating')
+        .eq('employee_id', employeeId);
+
+    if (response.isNotEmpty) {
+      final ratings = response.map((r) => (r['rating'] as num).toDouble()).toList();
+      final average = ratings.reduce((a, b) => a + b) / ratings.length;
+      return average;
+    }
+    return 4.5; // تقييم افتراضي
+  } catch (e) {
+    print('❌ خطأ في تحميل تقييم الموظف: $e');
+    return 4.5;
+  }
+}
   Color _getStatusColor(ServiceStatus status) {
     switch (status) {
       case ServiceStatus.pending:
@@ -1347,24 +1434,44 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
   }
 
   // دالة لحفظ الخدمة المطلوبة في Supabase
-  // تحديث دالة _saveRequestedServiceToSupabase
-  Future<void> _saveRequestedServiceToSupabase(RequestedService service) async {
-    try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) throw Exception('يجب تسجيل الدخول أولاً');
+  // دالة لحفظ الخدمة المطلوبة في Supabase
+  // تحديث دالة حفظ الخدمة لتضمن حفظ جميع البيانات
+ // 🔥 استبدل دالة _saveRequestedServiceToSupabase بهذه النسخة المصححة
+Future<void> _saveRequestedServiceToSupabase(RequestedService service) async {
+  try {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('يجب تسجيل الدخول أولاً');
 
-      print('💾 جاري حفظ الخدمة في جدول الكهرباء: ${service.name}');
+    print('💾 جاري حفظ الخدمة في جدول المياه: ${service.name}');
 
-      // 🔥 تعريف employeesData
-      dynamic employeesData;
+    // التحقق من الازدواجية
+    final today = DateTime.now();
+    final todayStart = DateTime(today.year, today.month, today.day);
+    final todayEnd = todayStart.add(Duration(days: 1));
 
-      if (service.isCustom &&
-          service.selectedEmployees != null &&
-          service.selectedEmployees!.isNotEmpty) {
-        // للخدمات المخصصة - قائمة الموظفين
-        employeesData = service.selectedEmployees!
-            .map(
-              (emp) => {
+    final existingServices = await _supabase
+        .from('water_services_invoices')
+        .select()
+        .eq('user_id', user.id)
+        .eq('service_name', service.name)
+        .eq('amount', service.amount)
+        .gte('created_at', todayStart.toIso8601String())
+        .lt('created_at', todayEnd.toIso8601String());
+
+    if (existingServices.isNotEmpty) {
+      print('⚠️ الخدمة موجودة مسبقاً، تم تجنب الازدواجية');
+      return;
+    }
+
+    // 🔥 🔥 🔥 هذا هو الجزء المهم - حفظ بيانات الموظفين بشكل صحيح
+    dynamic employeesData;
+    String employeeName = 'فريق المياه';
+    String employeeSpecialty = 'خدمات المياه';
+
+    if (service.isCustom && service.selectedEmployees != null && service.selectedEmployees!.isNotEmpty) {
+      // 🔥 للخدمات المخصصة - قائمة الموظفين
+      employeesData = service.selectedEmployees!
+          .map((emp) => {
                 'id': emp.id,
                 'name': emp.name,
                 'specialty': emp.specialty,
@@ -1372,53 +1479,75 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
                 'completedJobs': emp.completedJobs,
                 'hourlyRate': emp.hourlyRate,
                 'skills': emp.skills,
-              },
-            )
-            .toList();
-      } else if (service.selectedEmployee != null) {
-        // للخدمات العادية - موظف فردي
-        employeesData = {
-          'id': service.selectedEmployee!.id,
-          'name': service.selectedEmployee!.name,
-          'specialty': service.selectedEmployee!.specialty,
-          'rating': service.selectedEmployee!.rating,
-          'completedJobs': service.selectedEmployee!.completedJobs,
-          'hourlyRate': service.selectedEmployee!.hourlyRate,
-          'skills': service.selectedEmployee!.skills,
-        };
-      }
-
-      // 🔥 استخدم جدول الكهرباء مباشرة
-      final response =
-          await _supabase.from('electric_services_invoices').insert({
-            'user_id': user.id,
-            'service_name': service.name,
-            'service_description': service.description ?? '',
-            'amount': service.amount,
-            'request_date': DateTime.now().toIso8601String(),
-            'status': _getStatusText(service.status),
-            'employee_name': service.selectedEmployee?.name,
-            'employee_specialty': service.selectedEmployee?.specialty,
-            'selected_employees': employeesData,
-            'is_custom': service.isCustom,
-            'custom_details': service.customDetails,
-            'payment_status': 'pending',
-            'service_type': 'electricity',
-            'created_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
-          }).select();
-
-      print('✅ تم حفظ الخدمة في جدول الكهرباء: ${response.length} سجل');
-    } catch (e) {
-      print('❌ خطأ في حفظ الخدمة في جدول الكهرباء: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ في حفظ الخدمة: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+              })
+          .toList();
+      employeeName = 'فريق مكون من ${service.selectedEmployees!.length} فني';
+      employeeSpecialty = service.selectedEmployees!.map((e) => e.specialty).join('، ');
+    } else if (service.selectedEmployee != null) {
+      // 🔥 للخدمات العادية - موظف فردي
+      employeesData = {
+        'id': service.selectedEmployee!.id,
+        'name': service.selectedEmployee!.name,
+        'specialty': service.selectedEmployee!.specialty,
+        'rating': service.selectedEmployee!.rating,
+        'completedJobs': service.selectedEmployee!.completedJobs,
+        'hourlyRate': service.selectedEmployee!.hourlyRate,
+        'skills': service.selectedEmployee!.skills,
+      };
+      employeeName = service.selectedEmployee!.name;
+      employeeSpecialty = service.selectedEmployee!.specialty;
+    } else {
+      // 🔥 إذا لم يكن هناك موظف محدد
+      employeesData = {
+        'id': 'default_1',
+        'name': 'فريق المياه',
+        'specialty': 'خدمات المياه',
+        'rating': 4.5,
+        'completedJobs': 100,
+        'hourlyRate': 25.0,
+        'skills': ['تركيب عدادات', 'صيانة مضخات', 'تمديدات'],
+      };
     }
+
+    final referenceNumber = 'WT-${DateTime.now().millisecondsSinceEpoch}';
+
+    // 🔥 حفظ البيانات في Supabase
+    final response = await _supabase.from('water_services_invoices').insert({
+      'user_id': user.id,
+      'service_name': service.name,
+      'service_description': service.description ?? '',
+      'amount': service.amount,
+      'request_date': DateTime.now().toIso8601String(),
+      'status': 'completed',
+      'employee_name': employeeName,
+      'employee_specialty': employeeSpecialty,
+      'selected_employees': employeesData, // 🔥 هذا هو الحقل المهم
+      'is_custom': service.isCustom,
+      'custom_details': service.customDetails,
+      'payment_status': 'paid',
+      'service_type': 'water',
+      'reference_number': referenceNumber,
+      'payment_method': 'طريقة الدفع المختارة',
+      'payment_date': DateTime.now().toIso8601String(),
+      'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    }).select();
+
+    print('✅ تم حفظ الخدمة في جدول المياه: ${response.length} سجل');
+    print('📊 بيانات الموظفين المحفوظة:');
+    print('   - employee_name: $employeeName');
+    print('   - employee_specialty: $employeeSpecialty');
+    print('   - selected_employees type: ${employeesData.runtimeType}');
+  } catch (e) {
+    print('❌ خطأ في حفظ الخدمة في جدول المياه: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('حدث خطأ في حفظ الخدمة: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   // دالة مساعدة لتحويل النص إلى ServiceStatus
   ServiceStatus _parseStatus(String status) {
@@ -1446,56 +1575,72 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
   void _addRequestedService(ServiceItem service, {String? customDetails}) {
     final isCustom = customDetails != null;
 
-    // ✅ تحقق أقوى من الازدواجية
+    // ✅ تحسين التحقق من الازدواجية
     final now = DateTime.now();
     final todayFormatted = _formatDate(now);
 
-    // التحقق من الخدمات المماثلة في آخر 24 ساعة
-    final existingService = _requestedServices.firstWhere(
+    final serviceUniqueId =
+        '${service.name}_${service.amount}_${customDetails ?? ''}';
+
+    final existingServiceIndex = _requestedServices.indexWhere(
       (s) =>
-          s.name == service.name &&
-          s.requestDate == todayFormatted &&
-          (s.status == ServiceStatus.pending ||
-              s.status == ServiceStatus.inProgress),
-      orElse: () => RequestedService(
-        id: '',
-        name: '',
-        amount: 0,
-        requestDate: '',
-        status: ServiceStatus.pending,
-      ),
+          '${s.name}_${s.amount}_${s.customDetails ?? ''}' == serviceUniqueId &&
+          s.requestDate == todayFormatted,
     );
 
-    if (existingService.id.isNotEmpty) {
+    if (existingServiceIndex != -1) {
       print('⚠️ الخدمة "${service.name}" موجودة مسبقاً، تم تجنب الازدواجية');
-
-      // تحديث القائمة إذا كانت الخدمة موجودة
+      final existingService = _requestedServices[existingServiceIndex];
       setState(() {
-        _requestedServices.remove(existingService);
+        _requestedServices.removeAt(existingServiceIndex);
         _requestedServices.insert(0, existingService);
       });
-
       return;
     }
 
-    // 🔥 التصحيح: التعامل الصحيح مع أنواع البيانات للموظفين
+    // 🔥 التأكد من وجود موظف للخدمة
     dynamic selectedEmployeeData;
     List<Employee>? selectedEmployeesList;
 
     if (isCustom) {
-      // للخدمات المخصصة - التعامل مع List<Employee>
+      // للخدمات المخصصة
       final employees = _selectedEmployees['خدمة مخصصة'];
       if (employees is List<Employee>) {
         selectedEmployeesList = employees;
       } else if (employees is Employee) {
-        // إذا كان موظفاً واحداً فقط، ضعه في قائمة
         selectedEmployeesList = [employees];
+      } else {
+        // 🔥 إذا لم يتم اختيار موظفين، استخدم موظف افتراضي
+        selectedEmployeesList = [
+          Employee(
+            id: 'default_1',
+            name: 'فريق المياه',
+            specialty: 'خدمات المياه',
+            rating: 4.5,
+            completedJobs: 100,
+            imageUrl: '',
+            skills: ['تركيب عدادات', 'صيانة مضخات', 'تمديدات'],
+            hourlyRate: 25.0,
+          ),
+        ];
       }
     } else {
-      // للخدمات العادية - التعامل مع Employee فردي
+      // للخدمات العادية
       final employee = _selectedEmployees[service.name];
       if (employee is Employee) {
         selectedEmployeeData = employee;
+      } else {
+        // 🔥 إذا لم يتم اختيار موظف، استخدم موظف افتراضي
+        selectedEmployeeData = Employee(
+          id: 'default_1',
+          name: 'فريق المياه',
+          specialty: 'خدمات المياه',
+          rating: 4.5,
+          completedJobs: 100,
+          imageUrl: '',
+          skills: ['تركيب عدادات', 'صيانة مضخات', 'تمديدات'],
+          hourlyRate: 25.0,
+        );
       }
     }
 
@@ -1505,7 +1650,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
       description: service.additionalInfo,
       amount: service.amount,
       requestDate: todayFormatted,
-      status: ServiceStatus.pending,
+      status: ServiceStatus.completed, // 🔥 تغيير إلى completed مباشرة
       selectedEmployee: isCustom ? null : selectedEmployeeData,
       selectedEmployees: isCustom ? selectedEmployeesList : null,
       isCustom: isCustom,
@@ -1516,13 +1661,10 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
       _requestedServices.insert(0, requestedService);
     });
 
-    // حفظ الخدمة في Supabase أولاً
-    _saveRequestedServiceToSupabase(requestedService).then((_) {
-      // حفظ فاتورة منفصلة للخدمات المدفوعة
-      _savePaidServiceInvoice(service, customDetails: customDetails);
+    // حفظ الخدمة في Supabase
+    _saveRequestedServiceToSupabase(requestedService);
 
-      print('✅ تم إضافة الخدمة المطلوبة: ${service.name}');
-    });
+    print('✅ تم إضافة الخدمة المطلوبة: ${service.name}');
   }
 
   // دالة لحفظ فاتورة الخدمة المدفوعة
@@ -1584,6 +1726,8 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     // بدلاً من فتح اختيار الموظفين مباشرة، نفتح نموذج إدخال التفاصيل أولاً
     _showCustomRequestBottomSheet();
   }
+
+  //*ssssssssssssssssssssssssssssssssssss
 
   void _showCustomRequestBottomSheet() {
     final serviceNameController = TextEditingController();
@@ -1664,7 +1808,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
                     _buildCustomField(
                       controller: serviceNameController,
                       label: 'اسم الخدمة المطلوبة',
-                      hint: 'مثال: تركيب نظام إنذار ضد الحريق',
+                      hint: 'مثال: تركيب نظام فلترة المياه',
                       icon: Icons.title,
                     ),
                     const SizedBox(height: 16),
@@ -1895,7 +2039,131 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
       ),
     );
   }
+// 🔥 أضف هذه الدالة في class _WaterPaidServicesState
+void _debugServiceDetails(int index) async {
+  try {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
 
+    final response = await _supabase
+        .from('water_services_invoices')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false);
+
+    if (response.isNotEmpty && index < response.length) {
+      final data = response[index];
+      
+      print('\n🔍 === فحص تفصيلي للخدمة ===');
+      print('📝 ID: ${data['id']}');
+      print('📝 service_name: ${data['service_name']}');
+      print('💰 amount: ${data['amount']}');
+      print('📅 created_at: ${data['created_at']}');
+      print('👤 employee_name: "${data['employee_name']}"');
+      print('🎓 employee_specialty: "${data['employee_specialty']}"');
+      print('🔧 is_custom: ${data['is_custom']}');
+      
+      // 🔥 فحص مفصل لـ selected_employees
+      final selectedEmployees = data['selected_employees'];
+      print('\n📊 === فحص selected_employees ===');
+      print('📌 هل هو NULL؟: ${selectedEmployees == null}');
+      
+      if (selectedEmployees != null) {
+        print('📌 نوع البيانات: ${selectedEmployees.runtimeType}');
+        print('📌 القيمة الخام: $selectedEmployees');
+        
+        // محاولة فك الترميز
+        if (selectedEmployees is Map) {
+          print('📌 ✅ إنها Map (موظف فردي)');
+          print('   - الاسم: ${selectedEmployees['name']}');
+          print('   - التخصص: ${selectedEmployees['specialty']}');
+          print('   - ID: ${selectedEmployees['id']}');
+          print('   - المهارات: ${selectedEmployees['skills']}');
+        } else if (selectedEmployees is List) {
+          print('📌 ✅ إنها List (قائمة موظفين)');
+          print('   - عدد الموظفين: ${selectedEmployees.length}');
+          for (var i = 0; i < selectedEmployees.length; i++) {
+            print('   👤 الموظف ${i + 1}:');
+            print('     - الاسم: ${selectedEmployees[i]['name']}');
+            print('     - التخصص: ${selectedEmployees[i]['specialty']}');
+          }
+        } else if (selectedEmployees is String) {
+          print('⚠️ إنها String! قد تكون JSON مخزنة كنص');
+          print('📌 المحتوى: $selectedEmployees');
+        }
+      } else {
+        print('❌ selected_employees هو NULL تماماً!');
+      }
+      
+      // 🔥 فحص دالة التحويل
+      print('\n🔍 === فحص تحويل البيانات ===');
+      final convertedService = _convertDatabaseToService(data);
+      if (convertedService != null) {
+        print('✅ تم تحويل البيانات إلى RequestedService');
+        print('   - service.name: ${convertedService.name}');
+        print('   - service.selectedEmployee: ${convertedService.selectedEmployee?.name ?? "NULL"}');
+        print('   - service.selectedEmployees: ${convertedService.selectedEmployees?.length ?? 0} عناصر');
+      }
+    }
+  } catch (e) {
+    print('❌ خطأ في الفحص: $e');
+  }
+}
+
+// 🔥 دالة مساعدة للتحويل
+RequestedService? _convertDatabaseToService(dynamic data) {
+  try {
+    Employee? singleEmployee;
+    List<Employee>? multipleEmployees;
+
+    if (data['selected_employees'] != null) {
+      final employeesData = data['selected_employees'];
+      
+      if (data['is_custom'] == true && employeesData is List) {
+        multipleEmployees = [];
+        for (var empData in employeesData) {
+          multipleEmployees.add(Employee(
+            id: empData['id']?.toString() ?? 'unknown',
+            name: empData['name'] ?? 'غير معروف',
+            specialty: empData['specialty'] ?? 'غير محدد',
+            rating: (empData['rating'] ?? 0.0).toDouble(),
+            completedJobs: empData['completedJobs'] ?? 0,
+            imageUrl: '',
+            skills: List<String>.from(empData['skills'] ?? []),
+            hourlyRate: (empData['hourlyRate'] ?? 0.0).toDouble(),
+          ));
+        }
+      } else if (employeesData is Map) {
+        singleEmployee = Employee(
+          id: employeesData['id']?.toString() ?? 'unknown',
+          name: employeesData['name'] ?? 'غير معروف',
+          specialty: employeesData['specialty'] ?? 'غير محدد',
+          rating: (employeesData['rating'] ?? 0.0).toDouble(),
+          completedJobs: employeesData['completedJobs'] ?? 0,
+          imageUrl: '',
+          skills: List<String>.from(employeesData['skills'] ?? []),
+          hourlyRate: (employeesData['hourlyRate'] ?? 0.0).toDouble(),
+        );
+      }
+    }
+
+    return RequestedService(
+      id: data['id']?.toString() ?? 'unknown',
+      name: data['service_name'] ?? 'خدمة غير محددة',
+      description: data['service_description']?.toString(),
+      amount: (data['amount'] ?? 0).toDouble(),
+      requestDate: _formatDate(DateTime.parse(data['created_at'] ?? DateTime.now().toString())),
+      status: _parseStatus(data['status']?.toString() ?? 'pending'),
+      selectedEmployee: singleEmployee,
+      selectedEmployees: multipleEmployees,
+      isCustom: data['is_custom'] == true,
+      customDetails: data['custom_details']?.toString(),
+    );
+  } catch (e) {
+    print('❌ خطأ في تحويل البيانات: $e');
+    return null;
+  }
+}
   Widget _buildCustomField({
     required TextEditingController controller,
     required String label,
@@ -1941,51 +2209,51 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     );
   }
 
-  Widget _buildElectricityPaidServices() {
+  Widget _buildWaterPaidServices() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionTitle('الخدمات المدفوعة - الكهرباء'),
+        _buildSectionTitle('الخدمات المدفوعة - المياه'),
         const SizedBox(height: 16),
         _buildPaidServiceCard(
-          title: 'تركيب عدادات ذكية',
-          description: 'تركيب عداد كهرباء ذكي لمراقبة الاستهلاك بدقة',
+          title: 'تركيب عدادات مياه',
+          description: 'تركيب عداد مياه دقيق لمراقبة الاستهلاك',
           detailedDescription:
-              'تشمل هذه الخدمة تركيب عداد ذكي متصل بتطبيق الهاتف، تقارير استهلاك يومية، تنبيهات عند تجاوز الحدود، وإمكانية التحكم عن بعد. المعدات معتمدة وموثوقة مع ضمان لمدة سنتين.',
-          price: '150 د.ع',
+              'تشمل هذه الخدمة تركيب عداد مياه معتمد، فحص التوصيلات، وضمان دقة القياس. المعدات معتمدة وموثوقة مع ضمان لمدة سنتين.',
+          price: '120 د.ع',
+          duration: '1-3 ساعات',
+          icon: Icons.water_drop,
+          gradient: const [Color(0xFF29B6F6), Color(0xFF4FC3F7)],
+        ),
+        _buildPaidServiceCard(
+          title: 'فحص وصيانة مضخات المياه',
+          description: 'فحص شامل لمضخة المياه وإصلاح الأعطال',
+          detailedDescription:
+              'تشمل الخدمة فحصاً شاملاً لمضخة المياه، اختبار الضغط، فحص التوصيلات الكهربائية، تنظيف المكونات، واستبدال الأجزاء التالفة. يشمل التقرير النهائي توصيات للصيانة الدورية.',
+          price: '180 د.ع',
           duration: '2-4 ساعات',
-          icon: Icons.electrical_services,
-          gradient: const [Color(0xFF0D47A1), Color(0xFF1976D2)],
+          icon: Icons.build,
+          gradient: const [Color(0xFF29B6F6), Color(0xFF4FC3F7)],
         ),
         _buildPaidServiceCard(
-          title: 'فحص وصيانة لوحة الكهرباء',
-          description: 'فحص شامل للوحة الكهرباء الرئيسية وإصلاح الأعطال',
+          title: 'تمديدات مائية إضافية',
+          description: 'تركيب نقاط ماء إضافية في المنزل',
           detailedDescription:
-              'تشمل الخدمة فحصاً شاملاً للوحة الكهرباء، اختبار القواطع، فحص التوصيلات، تنظيف المكونات، واستبدال الأجزاء التالفة. يشمل التقرير النهائي توصيات للسلامة الكهربائية.',
-          price: '200 د.ع',
-          duration: '3-5 ساعات',
-          icon: Icons.construction,
-          gradient: const [Color(0xFF0D47A1), Color(0xFF1976D2)],
-        ),
-        _buildPaidServiceCard(
-          title: 'تمديدات كهربائية إضافية',
-          description: 'تركيب نقاط كهرباء إضافية في المنزل',
-          detailedDescription:
-              'خدمة تركيب نقاط كهرباء جديدة حسب احتياجاتك، مع استخدام أسلاك ومعايير السلامة المطلوبة. تشمل الخدمة التخطيط، التمديد، والتركيب النهائي مع اختبار كل نقطة.',
-          price: '80 د.ع',
+              'خدمة تركيب نقاط ماء جديدة حسب احتياجاتك، مع استخدام أنابيب ومعايير السلامة المطلوبة. تشمل الخدمة التخطيط، التمديد، والتركيب النهائي مع اختبار كل نقطة.',
+          price: '70 د.ع',
           duration: 'حسب الطلب',
-          icon: Icons.extension,
-          gradient: const [Color(0xFF0D47A1), Color(0xFF1976D2)],
+          icon: Icons.plumbing,
+          gradient: const [Color(0xFF29B6F6), Color(0xFF4FC3F7)],
         ),
         _buildPaidServiceCard(
-          title: 'تركيب أنظمة الطاقة الشمسية',
-          description: 'تركيب نظام طاقة شمسية متكامل للمنازل',
+          title: 'تركيب أنظمة فلترة المياه',
+          description: 'تركيب نظام فلترة متكامل للمنازل',
           detailedDescription:
-              'تشمل الخدمة دراسة الجدوى، تصميم النظام، تركيب الألواح الشمسية، الأنفيرتر، البطاريات، ونظام المراقبة. نوفر أنظمة متكاملة بضمان يصل إلى 25 سنة للألواح و5 سنوات للمكونات الإلكترونية.',
-          price: 'يبدأ من 5000 د.ع',
-          duration: '1-3 أيام',
-          icon: Icons.solar_power,
-          gradient: const [Color(0xFF0D47A1), Color(0xFF1976D2)],
+              'تشمل الخدمة دراسة الجودة، تصميم النظام، تركيب مرشحات المياه، مضخات الضغط، ونظام التنقية. نوفر أنظمة متكاملة بضمان يصل إلى 5 سنوات للمرشحات وسنة للمكونات الإلكترونية.',
+          price: 'يبدأ من 3000 د.ع',
+          duration: '1-2 أيام',
+          icon: Icons.filter_alt,
+          gradient: const [Color(0xFF29B6F6), Color(0xFF4FC3F7)],
         ),
         _buildCustomServiceCard(),
       ],
@@ -2006,6 +2274,8 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
       ),
     );
   }
+
+  //*ssssssssssssssssssssssssssssssssssss
 
   Widget _buildPaidServiceCard({
     required String title,
@@ -2459,7 +2729,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     );
   }
 
-  // في ملف electricity_paid_services.dart - تحديث دالة _buildCustomServiceCard
+  // في ملف water_paid_services.dart - تحديث دالة _buildCustomServiceCard
   Widget _buildCustomServiceCard() {
     final selectedEmployee = _selectedEmployees['خدمة مخصصة'];
 
@@ -2547,7 +2817,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
 
               // Detailed Description
               Text(
-                'يمكنك طلب أي خدمة كهربائية غير موجودة في القائمة. سيتم دراسة طلبك وتقديم سعر وتفاصيل الخدمة خلال 24 ساعة.',
+                'يمكنك طلب أي خدمة مائية غير موجودة في القائمة. سيتم دراسة طلبك وتقديم سعر وتفاصيل الخدمة خلال 24 ساعة.',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[700],
@@ -2806,6 +3076,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     );
   }
 
+  //*jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
   // 🔥 دالة جديدة لإدخال تفاصيل الخدمة المخصصة
   // 🔥 دالة جديدة لعرض تفاصيل الخدمة المخصصة بنافذة منبثقة جميلة
   void _showCustomServiceDetailsDialog() {
@@ -2888,7 +3159,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
                     _buildCustomField(
                       controller: serviceNameController,
                       label: 'اسم الخدمة المطلوبة *',
-                      hint: 'مثال: تركيب نظام إنذار ضد الحريق',
+                      hint: 'مثال: تركيب نظام فلترة المياه',
                       icon: Icons.title,
                     ),
                     const SizedBox(height: 16),
@@ -3216,7 +3487,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
                 pointsDiscount: 0.0,
                 isPremiumService: true,
                 premiumServiceData: {
-                  'serviceType': 'electricity', // 🔥 أضف هذا السطر
+                  'serviceType': 'water', // 🔥 أضف هذا السطر المهم
                   'employeeName': _getEmployeeNameForPayment(
                     selectedEmployee,
                     isCustomService,
@@ -3360,26 +3631,54 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     }
     return 'غير محدد';
   }
+// في ملف المياه، أضف هذه الوظائف داخل class _WaterPaidServicesState
+// 🔥 دالة للتحقق مما إذا قام المستخدم بتقييم الخدمة
+// 🔥 دالة للتحقق مما إذا قام المستخدم بتقييم الخدمة - محدثة
+Future<bool> _hasUserRatedService(String serviceId) async {
+  try {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return false;
 
-  Future<void> _loadRequestedServicesFromSupabase() async {
+    final ratingServiceId = _getRatingServiceId(serviceId);
+
+    final response = await _supabase
+        .from('employee_ratings')
+        .select()
+        .eq('user_id', user.id)
+        .eq('service_id', ratingServiceId)
+        .maybeSingle();
+
+    return response != null;
+  } catch (e) {
+    print('❌ خطأ في التحقق من التقييم: $e');
+    return false;
+  }
+}
+// 🔥 دالة لتحويل معرف الخدمة ليتناسب مع نظام التقييم
+String _getRatingServiceId(String serviceId) {
+  // إذا كان المعرف يحتوي على 'req_' (الخدمات المطلوبة المحلية)
+  if (serviceId.startsWith('req_')) {
+    return serviceId;
+  }
+  // إذا كان المعرف من قاعدة البيانات، استخدمه كما هو
+  return serviceId;
+}
+ Future<void> _loadRequestedServicesFromSupabase() async {
     try {
       final user = _supabase.auth.currentUser;
-      if (user == null) {
-        print('❌ المستخدم غير مسجل الدخول');
-        return;
-      }
+      if (user == null) return;
 
-      print('🔄 جاري تحميل الخدمات المطلوبة من جدول الكهرباء فقط...');
+      print('🔄 جاري تحميل الخدمات المطلوبة من جدول المياه فقط...');
 
-      // 🔥 استعلام من جدول الكهرباء فقط
+      // 🔥 استعلام من جدول المياه فقط
       final response = await _supabase
-          .from('electric_services_invoices') // تأكد من اسم الجدول
+          .from('water_services_invoices') // تأكد من اسم الجدول
           .select()
           .eq('user_id', user.id)
-          .eq('service_type', 'electricity') // 🔥 إضافة هذا الشرط للتأكد
+          .eq('service_type', 'water') // 🔥 إضافة هذا الشرط للتأكد
           .order('created_at', ascending: false);
 
-      print('📊 عدد الخدمات المستلمة من الكهرباء: ${response.length}');
+      print('📊 عدد الخدمات المستلمة من المياه: ${response.length}');
 
       if (response.isNotEmpty) {
         final List<RequestedService> loadedServices = [];
@@ -3387,7 +3686,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
         for (var data in response) {
           try {
             print(
-              '🔍 معالجة خدمة كهرباء: ${data['service_name']} - الحالة: ${data['status']}',
+              '🔍 معالجة خدمة مياه: ${data['service_name']} - الحالة: ${data['status']}',
             );
 
             Employee? singleEmployee;
@@ -3468,7 +3767,7 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
 
             loadedServices.add(service);
           } catch (e) {
-            print('❌ خطأ في معالجة خدمة كهرباء: $e');
+            print('❌ خطأ في معالجة خدمة مياه: $e');
           }
         }
 
@@ -3476,15 +3775,15 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
           _requestedServices = loadedServices;
         });
 
-        print('🎉 تم تحميل ${_requestedServices.length} خدمة كهرباء بنجاح');
+        print('🎉 تم تحميل ${_requestedServices.length} خدمة مياه بنجاح');
       } else {
-        print('ℹ️ لا توجد خدمات مطلوبة في جدول الكهرباء');
+        print('ℹ️ لا توجد خدمات مطلوبة في جدول المياه');
         setState(() {
           _requestedServices = [];
         });
       }
     } catch (e) {
-      print('❌ خطأ في تحميل الخدمات من جدول الكهرباء: $e');
+      print('❌ خطأ في تحميل الخدمات من جدول المياه: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('حدث خطأ في تحميل الخدمات المطلوبة'),
@@ -3493,25 +3792,34 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
       );
     }
   }
-
-  @override
-  void initState() {
-    super.initState();
-
-    // 🔥 تأخير تحميل البيانات لضمان اكتمال تهيئة الواجهة
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadRequestedServicesFromSupabase();
+@override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await _loadRequestedServicesFromSupabase();
+    
+    // 🔥 بعد تحميل البيانات، قم بفحص أول خدمة
+    Future.delayed(Duration(seconds: 1), () {
+      _debugServiceDetails(0); // فحص أول خدمة
     });
-  }
+  });
+}
 
-  @override
+// 🔥 دالة لتحميل تقييمات جميع الموظفين
+Future<void> _loadEmployeeRatings() async {
+  try {
+    for (var employee in _employees) {
+      final rating = await _loadEmployeeRating(employee.id);
+      // يمكنك تحديث قائمة الموظفين بالتقييمات هنا
+    }
+  } catch (e) {
+    print('❌ خطأ في تحميل تقييمات الموظفين: $e');
+  }
+}
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // التأكد من تحميل البيانات عند كل دخول للشاشة
-    if (_requestedServices.isEmpty) {
-      _loadRequestedServicesFromSupabase();
-    }
+    _loadRequestedServicesFromSupabase(); // أضف هذا السطر
   }
 
   void _refreshData() {
@@ -3523,10 +3831,9 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
   }
 
   // دالة مخصصة لمعالجة نجاح الدفع في الخدمات المدفوعة
+  // دالة مخصصة لمعالجة نجاح الدفع في الخدمات المدفوعة
   void _handlePaidServicePaymentSuccess(ServiceItem service) {
-    // إضافة الخدمة إلى القائمة المطلوبة
-
-    // 🔥 تحديث الواجهة فوراً
+    // 🔥 تحديث الواجهة فوراً - نفس طريقة الكهرباء
     _refreshData();
 
     // إظهار رسالة نجاح
@@ -3543,8 +3850,9 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
     ServiceStatus newStatus,
   ) async {
     try {
+      // ✅ استخدم الجدول الصحيح
       await _supabase
-          .from('electric_services_invoices') // 🔥 تغيير اسم الجدول
+          .from('requested_services_invoices')
           .update({
             'status': _getStatusText(newStatus),
             'updated_at': DateTime.now().toIso8601String(),
@@ -3560,13 +3868,11 @@ class _ElectricityPaidServicesState extends State<ElectricityPaidServices> {
         }
       });
     } catch (e) {
-      print('❌ خطأ في تحديث حالة الخدمة في جدول الكهرباء: $e');
+      print('❌ خطأ في تحديث حالة الخدمة: $e');
     }
   }
 }
-
 // واجهة اختيار الموظفين المخصصة للخدمات المخصصة
-
 // إضافة دالة copyWith لنموذج RequestedService
 extension RequestedServiceExtension on RequestedService {
   RequestedService copyWith({
@@ -3582,6 +3888,7 @@ extension RequestedServiceExtension on RequestedService {
       requestDate: requestDate ?? this.requestDate,
       status: status ?? this.status,
       selectedEmployee: selectedEmployee,
+      selectedEmployees: selectedEmployees,
       isCustom: isCustom,
       customDetails: customDetails,
     );
@@ -3624,6 +3931,7 @@ class RequestedService {
 }
 
 // خدمة منفصلة لفواتير الخدمات المدفوعة
+// 🔥 تحديث خدمة فواتير الخدمات المدفوعة للمياه
 class PaidServicesInvoiceService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -3641,8 +3949,12 @@ class PaidServicesInvoiceService {
       final user = _supabase.auth.currentUser;
       if (user == null) throw Exception('يجب تسجيل الدخول أولاً');
 
-      // 🔥 استخدم جدول الكهرباء مباشرة
-      await _supabase.from('electric_services_invoices').insert({
+      // 🔥 أضف reference_number هنا
+      final referenceNumber =
+          'WT-PAID-${DateTime.now().millisecondsSinceEpoch}';
+
+      // 🔥 استخدم جدول المياه مباشرة
+      await _supabase.from('water_services_invoices').insert({
         'user_id': user.id,
         'service_name': serviceName,
         'service_description': serviceDescription,
@@ -3654,11 +3966,12 @@ class PaidServicesInvoiceService {
         'custom_details': customDetails,
         'payment_date': DateTime.now().toIso8601String(),
         'status': 'completed',
-        'service_type': 'electricity',
+        'service_type': 'water',
+        'reference_number': referenceNumber, // 🔥 أضف هذا السطر
         'created_at': DateTime.now().toIso8601String(),
       });
 
-      print('✅ تم حفظ فاتورة الخدمة المدفوعة في جدول الكهرباء');
+      print('✅ تم حفظ فاتورة الخدمة المدفوعة في جدول المياه');
     } catch (e) {
       print('❌ خطأ في حفظ فاتورة الخدمة المدفوعة: $e');
       throw e;
@@ -3666,6 +3979,8 @@ class PaidServicesInvoiceService {
   }
 }
 
+
+// نموذج تقييم الموظف
 // نموذج تقييم الموظف
 class EmployeeRating {
   final String id;
@@ -3722,26 +4037,6 @@ class ServiceNotification {
       timestamp: timestamp,
       isRead: isRead ?? this.isRead,
     );
-  }
-}
-
-class LifecycleEventHandler extends WidgetsBindingObserver {
-  final VoidCallback resumeCallBack;
-
-  LifecycleEventHandler({required this.resumeCallBack});
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        resumeCallBack();
-        break;
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.paused:
-      case AppLifecycleState.detached:
-      case AppLifecycleState.hidden: // أضف هذا السطر
-        break;
-    }
   }
 }
 
