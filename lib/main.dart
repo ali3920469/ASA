@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/ewecome_screen.dart';
 import 'package:mang_mu/providers/theme_provider.dart';
 import 'package:mang_mu/screens/citizen/Shared%20Services%20Citizen/regesyer_screen.dart';
 import 'package:mang_mu/screens/citizen/Shared%20Services%20Citizen/user_main_screen.dart';
 import 'package:mang_mu/screens/citizen/Shared%20Services%20Citizen/signin_screen.dart';
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/eregesyer_screen.dart';
 import 'package:mang_mu/screens/citizen/Shared%20Services%20Citizen/welcome_screen.dart';
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/esignin_screen.dart';
-
+import 'package:mang_mu/screens/employee/Shared Services/esignin_screen.dart';
 import 'package:mang_mu/screens/zemp_and_citizen/mainscren.dart';
 import 'package:mang_mu/screens/zemp_and_citizen/splash_screen.dart';
 import 'package:mang_mu/language/app_localizations.dart';
@@ -101,11 +98,6 @@ class MyApp extends StatelessWidget {
                       const UserMainScreen(),
                   RegesyerScreen.screenRoot: (context) =>
                       const RegesyerScreen(),
-                  EregesyerScreen.screenroot: (context) =>
-                      const EregesyerScreen(),
-  EwecomeScreen.screenroot: (context) => const EwecomeScreen(),
-                  EsigninScreen.screenroot: (context) => const EsigninScreen(),
-       
                 },
               );
             },

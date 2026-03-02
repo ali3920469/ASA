@@ -4,14 +4,12 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
-import 'dart:typed_data';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'dart:io' show File, Platform;
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/esignin_screen.dart';
+import 'package:mang_mu/screens/employee/Shared Services/esignin_screen.dart';
 import 'package:mang_mu/providers/theme_provider.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
+
 class ReportingOfficerWaterScreen extends StatefulWidget {
   @override
   _ReportingOfficerWaterScreenState createState() => _ReportingOfficerWaterScreenState();
@@ -28,16 +26,16 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
   late TabController _employeeSubTabController;
   late TabController _appSubTabController;
   late AnimationController _animationController;
-  late Animation<double> _animation;
   
-  String _selectedProblem = '';
-  String _problemDescription = '';
-  String _problemImage = '';
-  bool _showDetails = false;
-  String _selectedReportType = 'اليوم';
-  List<dynamic> _filteredReports = [];
-  TextEditingController _searchController = TextEditingController();
-  static const String screenroot = 'esignin_screen';
+  // متغيرات التحكم في التحديث
+  final RefreshController _waterRefreshController = RefreshController();
+  final RefreshController _employeeRefreshController = RefreshController();
+  final RefreshController _appRefreshController = RefreshController();
+  final RefreshController _reportsRefreshController = RefreshController();
+
+
+  final String _selectedReportType = 'اليوم';
+  final TextEditingController _searchController = TextEditingController();
 
   // ألوان وزارة المياه الحكومية
   final Color _primaryColor = Color(0xFF0072B5); // أزرق مائي حكومي
@@ -49,15 +47,12 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
   final Color _darkColor = Color(0xFF005A8C); // أزرق داكن
   final Color _lightColor = Color(0xFFF5F7FA); // خلفية فاتحة
   final Color _successColor = Color(0xFF2E7D32); // أخضر نجاح
-  final Color _errorColor = Color(0xffdc3545);
 
   // نظام التقارير
-  String _selectedArea = 'جميع المناطق';
   String _selectedReportTypeSystem = 'يومي';
   List<DateTime> _selectedDates = [];
   String? _selectedWeek;
   String? _selectedMonth;
-  final List<String> _areas = ['جميع المناطق', 'المنطقة الوسطى', 'المنطقة الشرقية', 'المنطقة الغربية', 'المنطقة الشمالية'];
   final List<String> _reportTypes = ['يومي', 'أسبوعي', 'شهري'];
   final List<String> _weeks = ['الأسبوع الأول', 'الأسبوع الثاني', 'الأسبوع الثالث', 'الأسبوع الرابع'];
   final List<String> _months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
@@ -92,7 +87,7 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
   ];
 
   // بيانات المشاكل للماء
-  List<WaterProblem> _waterProblems = [
+  final List<WaterProblem> _waterProblems = [
     WaterProblem(
       customerName: 'أحمد محمد',
       customerId: 'CUST-001',
@@ -155,7 +150,7 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
     ),
   ];
 
-  List<WaterEmployeeProblem> _waterEmployeeProblems = [
+  final List<WaterEmployeeProblem> _waterEmployeeProblems = [
     WaterEmployeeProblem(
       customerName: 'محمد أحمد',
       area: 'حي العليا',
@@ -206,7 +201,7 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
     ),
   ];
 
-  List<WaterAppProblem> _waterAppProblems = [
+  final List<WaterAppProblem> _waterAppProblems = [
     WaterAppProblem(
       customerName: 'محمد أحمد',
       area: 'حي العليا',
@@ -239,7 +234,7 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
     ),
   ];
 
-  List<WaterPipelineProblem> _waterPipelineProblems = [
+  final List<WaterPipelineProblem> _waterPipelineProblems = [
     WaterPipelineProblem(
       customerName: 'علي سعيد',
       location: 'حي الربيع - شارع النخيل',
@@ -255,7 +250,7 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
     ),
   ];
 
-  List<WaterQualityProblem> _waterQualityProblems = [
+  final List<WaterQualityProblem> _waterQualityProblems = [
     WaterQualityProblem(
       customerName: 'فهد العتيبي',
       area: 'حي العليا',
@@ -270,7 +265,7 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
     ),
   ];
 
-  List<WaterConnectionProblem> _waterConnectionProblems = [
+  final List<WaterConnectionProblem> _waterConnectionProblems = [
     WaterConnectionProblem(
       customerName: 'علي أحمد',
       area: 'حي العليا',
@@ -299,10 +294,6 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
     _animationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 500),
-    );
-    _animation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
     );
     _filterReports();
     
@@ -337,42 +328,27 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
     _appSubTabController.dispose();
     _animationController.dispose();
     _searchController.dispose();
+    
+    // تخلص من متغيرات التحكم في التحديث
+    _waterRefreshController.dispose();
+    _employeeRefreshController.dispose();
+    _appRefreshController.dispose();
+    _reportsRefreshController.dispose();
+    
     super.dispose();
   }
 
   void _filterReports() {
     final now = DateTime.now();
-    final searchQuery = _searchController.text.toLowerCase();
+    _searchController.text.toLowerCase();
     
     setState(() {
-      List<dynamic> allProblems = _getAllProblems();
+      _getAllProblems();
       
       if (_selectedReportType == 'اليوم') {
-        _filteredReports = allProblems.where((problem) {
-          final problemDate = DateTime.parse(problem.date);
-          final matchesDate = problemDate.year == now.year &&
-                 problemDate.month == now.month &&
-                 problemDate.day == now.day;
-          final matchesSearch = _problemMatchesSearch(problem, searchQuery);
-          return matchesDate && matchesSearch;
-        }).toList();
       } else if (_selectedReportType == 'الأسبوع') {
-        final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-        _filteredReports = allProblems.where((problem) {
-          final problemDate = DateTime.parse(problem.date);
-          final matchesDate = problemDate.isAfter(startOfWeek.subtract(Duration(days: 1))) &&
-                 problemDate.isBefore(now.add(Duration(days: 1)));
-          final matchesSearch = _problemMatchesSearch(problem, searchQuery);
-          return matchesDate && matchesSearch;
-        }).toList();
+        now.subtract(Duration(days: now.weekday - 1));
       } else if (_selectedReportType == 'الشهر') {
-        _filteredReports = allProblems.where((problem) {
-          final problemDate = DateTime.parse(problem.date);
-          final matchesDate = problemDate.year == now.year &&
-                 problemDate.month == now.month;
-          final matchesSearch = _problemMatchesSearch(problem, searchQuery);
-          return matchesDate && matchesSearch;
-        }).toList();
       }
     });
   }
@@ -1069,117 +1045,172 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
     );
   }
 
+  // دوال التحديث
+  Future<void> _onWaterRefresh() async {
+    await Future.delayed(Duration(seconds: 2)); // محاكاة تحميل البيانات
+    
+    setState(() {
+      // تحديث البيانات - يمكنك إضافة منطق التحديث الفعلي هنا
+      _filterReports();
+    });
+    
+    _waterRefreshController.refreshCompleted();
+  }
+
+  Future<void> _onEmployeeRefresh() async {
+    await Future.delayed(Duration(seconds: 2));
+    
+    setState(() {
+      _filterReports();
+    });
+    
+    _employeeRefreshController.refreshCompleted();
+  }
+
+  Future<void> _onAppRefresh() async {
+    await Future.delayed(Duration(seconds: 2));
+    
+    setState(() {
+      _filterReports();
+    });
+    
+    _appRefreshController.refreshCompleted();
+  }
+
+  Future<void> _onReportsRefresh() async {
+    await Future.delayed(Duration(seconds: 2));
+    
+    setState(() {
+      _filterReports();
+    });
+    
+    _reportsRefreshController.refreshCompleted();
+  }
+
   Widget _buildReportsView(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: _primaryColor.withOpacity(0.1)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: _primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+    return SmartRefresher(
+      controller: _reportsRefreshController,
+      enablePullDown: true,
+      enablePullUp: false,
+      header: WaterDropHeader(
+        waterDropColor: _primaryColor,
+        complete: Icon(Icons.done, color: _primaryColor),
+        refresh: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
+        ),
+      ),
+      onRefresh: _onReportsRefresh,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: _primaryColor.withOpacity(0.1)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: _primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.summarize, color: _primaryColor, size: 28),
                     ),
-                    child: Icon(Icons.summarize, color: _primaryColor, size: 28),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'نظام التقارير المتقدم',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: _primaryColor,
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'نظام التقارير المتقدم',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: _primaryColor,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 4),
+                          SizedBox(height: 4),
+                          Text(
+                            'وزارة المياه - إدارة التقارير',
+                            style: TextStyle(
+                              color: _textSecondaryColor(context),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            SizedBox(height: 20),
+            
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey[300]!),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.filter_alt, color: _primaryColor, size: 20),
+                        SizedBox(width: 8),
                         Text(
-                          'وزارة المياه - إدارة التقارير',
+                          'فلترة التقارير',
                           style: TextStyle(
-                            color: _textSecondaryColor(context),
-                            fontSize: 14,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: _textColor(context),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    SizedBox(height: 16),
+                    _buildReportTypeFilter(),
+                  ],
+                ),
               ),
             ),
-          ),
-          
-          SizedBox(height: 20),
-          
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey[300]!),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.filter_alt, color: _primaryColor, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'فلترة التقارير',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: _textColor(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-                  _buildReportTypeFilter(),
-                ],
+            
+            SizedBox(height: 20),
+            
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey[300]!),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: _buildReportOptions(),
               ),
             ),
-          ),
-          
-          SizedBox(height: 20),
-          
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey[300]!),
+            
+            SizedBox(height: 20),
+            
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: _buildGenerateReportButton(),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: _buildReportOptions(),
-            ),
-          ),
-          
-          SizedBox(height: 20),
-          
-          Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: _buildGenerateReportButton(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1617,18 +1648,6 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
                         _showSettingsScreen(context);
                       },
                     ),
-                    
-                    _buildDrawerMenuItem(
-                      icon: Icons.help_rounded,
-                      title: 'المساعدة والدعم',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _showHelpSupportScreen(context);
-                      },
-                    ),
-
-                    SizedBox(height: 30),
-                    
                     _buildDrawerMenuItem(
                       icon: Icons.logout_rounded,
                       title: 'تسجيل الخروج',
@@ -1804,27 +1823,6 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
           onSettingsChanged: (settings) {
             print('الإعدادات المحدثة: $settings');
           },
-        ),
-      ),
-    );
-  }
-
-  void _showHelpSupportScreen(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HelpSupportScreen(
-          primaryColor: _primaryColor,
-          secondaryColor: _secondaryColor,
-          accentColor: _accentColor,
-          backgroundColor: _lightColor,
-          cardColor: Colors.white,
-          textColor: _darkColor,
-          textSecondaryColor: Colors.grey[700]!,
-          borderColor: Colors.grey[300]!,
-          successColor: _successColor,
-          warningColor: _warningColor,
-          errorColor: _errorColor,
         ),
       ),
     );
@@ -2040,14 +2038,34 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
           ),
         ),
         Expanded(
-          child: TabBarView(
-            controller: _waterTabController,
-            children: [
-              _buildWaterOutageContent(),
-              _buildWaterPressureContent(),
-              _buildWaterQualityContent(),
-              _buildWaterOtherContent(),
-            ],
+          child: RefreshConfiguration(
+            headerBuilder: () => MaterialClassicHeader(
+              color: _primaryColor,
+              backgroundColor: Colors.white,
+            ),
+            footerBuilder: () => ClassicFooter(),
+            child: SmartRefresher(
+              controller: _waterRefreshController,
+              enablePullDown: true,
+              enablePullUp: false,
+              header: WaterDropHeader(
+                waterDropColor: _primaryColor,
+                complete: Icon(Icons.done, color: _primaryColor),
+                refresh: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
+                ),
+              ),
+              onRefresh: _onWaterRefresh,
+              child: TabBarView(
+                controller: _waterTabController,
+                children: [
+                  _buildWaterOutageContent(),
+                  _buildWaterPressureContent(),
+                  _buildWaterQualityContent(),
+                  _buildWaterOtherContent(),
+                ],
+              ),
+            ),
           ),
         ),
       ],
@@ -2352,13 +2370,26 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
           ),
         ),
         Expanded(
-          child: TabBarView(
-            controller: _employeeTabController,
-            children: [
-              _buildEmployeeMaintenanceContent(),
-              _buildEmployeeBillingContent(),
-              _buildEmployeeOtherContent(),
-            ],
+          child: SmartRefresher(
+            controller: _employeeRefreshController,
+            enablePullDown: true,
+            enablePullUp: false,
+            header: WaterDropHeader(
+              waterDropColor: _primaryColor,
+              complete: Icon(Icons.done, color: _primaryColor),
+              refresh: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
+              ),
+            ),
+            onRefresh: _onEmployeeRefresh,
+            child: TabBarView(
+              controller: _employeeTabController,
+              children: [
+                _buildEmployeeMaintenanceContent(),
+                _buildEmployeeBillingContent(),
+                _buildEmployeeOtherContent(),
+              ],
+            ),
           ),
         ),
       ],
@@ -2980,14 +3011,27 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
           ),
         ),
         Expanded(
-          child: TabBarView(
-            controller: _appTabController,
-            children: [
-              _buildAppCrashContent(),
-              _buildAppPaymentContent(),
-              _buildAppUIUXContent(),
-              _buildAppOtherContent(),
-            ],
+          child: SmartRefresher(
+            controller: _appRefreshController,
+            enablePullDown: true,
+            enablePullUp: false,
+            header: WaterDropHeader(
+              waterDropColor: _primaryColor,
+              complete: Icon(Icons.done, color: _primaryColor),
+              refresh: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
+              ),
+            ),
+            onRefresh: _onAppRefresh,
+            child: TabBarView(
+              controller: _appTabController,
+              children: [
+                _buildAppCrashContent(),
+                _buildAppPaymentContent(),
+                _buildAppUIUXContent(),
+                _buildAppOtherContent(),
+              ],
+            ),
           ),
         ),
       ],
@@ -4240,141 +4284,21 @@ class _ReportingOfficerWaterScreenState extends State<ReportingOfficerWaterScree
   }
 
   void _showProblemDetails(dynamic problem) {
-    String details = '';
     String imageCaption = '';
     
     if (problem is WaterProblem) {
-      details = '''
-🏢 **وزارة المياه - نظام الإبلاغات**
-📋 **تفاصيل البلاغ**
-
-👤 **العميل:** ${problem.customerName}
-🆔 **رقم العميل:** ${problem.customerId}
-🔧 **نوع المشكلة:** ${problem.problemType}
-📊 **فئة المشكلة:** ${problem.problemCategory}
-🏭 **محطة المياه:** ${problem.waterStation}
-📍 **الموقع:** ${problem.location}
-📅 **التاريخ:** ${problem.date}
-⏰ **الوقت:** ${problem.time}
-⏳ **المدة:** ${problem.duration}
-💧 **الأولوية:** ${problem.priority}
-📌 **الحالة:** ${problem.status}
-
-📝 **وصف المشكلة:**
-${problem.description}
-
-📸 **صورة البلاغ:**
-تم رفع صورة توضح المشكلة بواسطة العميل
-
-🗺️ **الموقع الدقيق:**
-تم تحديد الموقع الجغرافي عبر نظام التتبع
-
-📊 **معلومات إضافية:'''
-      + (problem.pressureReading != null ? '\n💧 **قراءة الضغط:** ${problem.pressureReading}' : '')
-      + (problem.meterNumber != null ? '\n🔢 **رقم العداد:** ${problem.meterNumber}' : '')
-      + (problem.pipelineCode != null ? '\n🏭 **كود خط الأنابيب:** ${problem.pipelineCode}' : '')
-      + '''
-      
-🚨 **إجراءات الصيانة:**
-تم إرسال البلاغ إلى فريق الصيانة للتعامل الفوري
-      ''';
       imageCaption = 'صورة توضح مشكلة المياه';
       
     } else if (problem is WaterEmployeeProblem) {
-      details = '''
-🏢 **وزارة المياه - نظام الإبلاغات**
-📋 **تفاصيل بلاغ تقصير الموظف**
-
-👤 **العميل:** ${problem.customerName}
-👨‍💼 **نوع الموظف:** ${problem.problemType}
-📋 **اسم الموظف:** ${problem.employeeName}
-🏘️ **الإدارة:** ${problem.employeeDepartment}
-📍 **الموقع:** ${problem.location}
-📅 **التاريخ:** ${problem.date}
-⏰ **الوقت:** ${problem.time}
-⏳ **ساعات التأخير:** ${problem.delayHours} ساعة
-📌 **الحالة:** ${problem.status}
-
-📝 **وصف المشكلة:**
-${problem.description}
-
-📸 **صورة البلاغ:**
-تم رفع صورة توضح المشكلة بواسطة العميل
-
-💼 **نوع البلاغ:** تقصير في أداء الواجب
-🎯 **درجة الخطورة:** متوسطة
-      ''';
       imageCaption = 'صورة توضح المشكلة مع الموظف';
       
     } else if (problem is WaterAppProblem) {
-      details = '''
-🏢 **وزارة المياه - نظام الإبلاغات**
-📋 **تفاصيل بلاغ مشكلة التطبيق**
-
-👤 **العميل:** ${problem.customerName}
-📱 **نوع المشكلة:** ${problem.problemType}
-📊 **إصدار التطبيق:** ${problem.appVersion}
-📟 **نوع الجهاز:** ${problem.deviceType}
-📍 **الموقع:** ${problem.location}
-📅 **التاريخ:** ${problem.date}
-⏰ **الوقت:** ${problem.time}
-📌 **الحالة:** ${problem.status}
-
-📝 **وصف المشكلة:**
-${problem.description}
-
-📸 **صورة البلاغ:**
-تم رفع لقطة شاشة توضح المشكلة
-
-🔧 **نوع العطل:** برمجي
-🚨 **درجة التأثير:** ${problem.problemType == 'تعطل في التطبيق' ? 'عالية' : 'متوسطة'}
-      ''';
       imageCaption = 'لقطة شاشة توضح مشكلة التطبيق';
       
     } else if (problem is WaterPipelineProblem) {
-      details = '''
-🏢 **وزارة المياه - نظام الإبلاغات**
-📋 **تفاصيل بلاغ خط الأنابيب**
-
-👤 **العميل:** ${problem.customerName}
-🏭 **كود الخط:** ${problem.pipelineCode}
-📍 **الموقع:** ${problem.location}
-🏘️ **المنطقة:** ${problem.area}
-📅 **التاريخ:** ${problem.date}
-⏰ **الوقت:** ${problem.time}
-📌 **الحالة:** ${problem.status}
-
-📝 **وصف المشكلة:**
-${problem.description}
-
-📸 **صورة البلاغ:**
-تم رفع صورة توضح مشكلة خط الأنابيب
-
-💧 **نوع المشكلة:** تسرب مياه
-      ''';
       imageCaption = 'صورة توضح مشكلة خط الأنابيب';
       
     } else {
-      details = '''
-🏢 **وزارة المياه - نظام الإبلاغات**
-📋 **تفاصيل البلاغ**
-
-👤 **العميل:** ${problem.customerName}
-📍 **الموقع:** ${problem.location}
-🏘️ **المنطقة:** ${problem.area}
-📅 **التاريخ:** ${problem.date}
-⏰ **الوقت:** ${problem.time}
-🔧 **نوع المشكلة:** ${problem.problemType}
-📌 **الحالة:** ${problem.status}
-
-📝 **وصف المشكلة:**
-${problem.description}
-
-📸 **صورة البلاغ:**
-تم رفع صورة توضح المشكلة
-
-💧 **نوع الخدمة:** خدمة المياه
-      ''';
       imageCaption = 'صورة توضح المشكلة المبلغ عنها';
     }
 
@@ -4472,8 +4396,8 @@ ${problem.description}
                     SizedBox(height: 8),
                     
                     _buildDetailRow('👤 العميل:', problem.customerName),
-                    if (problem is WaterProblem && problem.customerId != null)
-                      _buildDetailRow('🆔 رقم العميل:', problem.customerId!),
+                    if (problem is WaterProblem)
+                      _buildDetailRow('🆔 رقم العميل:', problem.customerId),
                     if (problem is WaterEmployeeProblem && problem.employeeName != null)
                       _buildDetailRow('👨‍💼 الموظف:', problem.employeeName!),
                     if (problem is WaterEmployeeProblem && problem.employeeDepartment != null)
@@ -4484,26 +4408,26 @@ ${problem.description}
                       _buildDetailRow('📊 إصدار التطبيق:', problem.appVersion!),
                     if (problem is WaterAppProblem && problem.deviceType != null)
                       _buildDetailRow('📟 نوع الجهاز:', problem.deviceType!),
-                    if (problem is WaterPipelineProblem && problem.pipelineCode != null)
-                      _buildDetailRow('🏭 كود الخط:', problem.pipelineCode!),
-                    if (problem is WaterProblem && problem.problemType != null)
-                      _buildDetailRow('🔧 نوع المشكلة:', problem.problemType!),
-                    if (problem is WaterEmployeeProblem && problem.problemType != null)
-                      _buildDetailRow('📋 نوع البلاغ:', problem.problemType!),
-                    if (problem is WaterAppProblem && problem.problemType != null)
-                      _buildDetailRow('📱 نوع المشكلة:', problem.problemType!),
-                    if (problem is WaterProblem && problem.problemCategory != null)
-                      _buildDetailRow('📊 فئة المشكلة:', problem.problemCategory!),
-                    if (problem is WaterProblem && problem.waterStation != null)
-                      _buildDetailRow('🏭 محطة المياه:', problem.waterStation!),
+                    if (problem is WaterPipelineProblem)
+                      _buildDetailRow('🏭 كود الخط:', problem.pipelineCode),
+                    if (problem is WaterProblem)
+                      _buildDetailRow('🔧 نوع المشكلة:', problem.problemType),
+                    if (problem is WaterEmployeeProblem)
+                      _buildDetailRow('📋 نوع البلاغ:', problem.problemType),
+                    if (problem is WaterAppProblem)
+                      _buildDetailRow('📱 نوع المشكلة:', problem.problemType),
+                    if (problem is WaterProblem)
+                      _buildDetailRow('📊 فئة المشكلة:', problem.problemCategory),
+                    if (problem is WaterProblem)
+                      _buildDetailRow('🏭 محطة المياه:', problem.waterStation),
                     _buildDetailRow('📍 الموقع:', _getLocation(problem)),
                     _buildDetailRow('📅 التاريخ:', problem.date),
                     _buildDetailRow('⏰ الوقت:', problem.time),
                     _buildDetailRow('📌 الحالة:', problem.status),
-                    if (problem is WaterProblem && problem.duration != null)
-                      _buildDetailRow('⏳ المدة:', problem.duration!),
-                    if (problem is WaterProblem && problem.priority != null)
-                      _buildDetailRow('💧 الأولوية:', problem.priority!),
+                    if (problem is WaterProblem)
+                      _buildDetailRow('⏳ المدة:', problem.duration),
+                    if (problem is WaterProblem)
+                      _buildDetailRow('💧 الأولوية:', problem.priority),
                     
                     SizedBox(height: 12),
                     
@@ -5907,26 +5831,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ],
             ),
           ),
-
-          // قائمة الإشعارات
-          Expanded(
-            child: _filteredNotifications.isEmpty
-                ? _buildEmptyState()
-                : RefreshIndicator(
-                    onRefresh: () async {
-                      await Future.delayed(Duration(seconds: 1));
-                      setState(() {});
-                    },
-                    child: ListView.builder(
-                      padding: EdgeInsets.zero,
-                      itemCount: _filteredNotifications.length,
-                      itemBuilder: (context, index) {
-                        final notification = _filteredNotifications[index];
-                        return _buildNotificationCard(notification);
-                      },
-                    ),
-                  ),
-          ),
         ],
       ),
     );
@@ -6315,2010 +6219,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       ),
     );
-  }
-}
-
-// === شاشة المساعدة والدعم (للمياه) ===
-class HelpSupportScreen extends StatefulWidget {
-  final Color primaryColor;
-  final Color secondaryColor;
-  final Color accentColor;
-  final Color backgroundColor;
-  final Color cardColor;
-  final Color textColor;
-  final Color textSecondaryColor;
-  final Color borderColor;
-  final Color successColor;
-  final Color warningColor;
-  final Color errorColor;
-
-  const HelpSupportScreen({
-    Key? key,
-    required this.primaryColor,
-    required this.secondaryColor,
-    required this.accentColor,
-    required this.backgroundColor,
-    required this.cardColor,
-    required this.textColor,
-    required this.textSecondaryColor,
-    required this.borderColor,
-    required this.successColor,
-    required this.warningColor,
-    required this.errorColor,
-  }) : super(key: key);
-
-  @override
-  _HelpSupportScreenState createState() => _HelpSupportScreenState();
-}
-
-class _HelpSupportScreenState extends State<HelpSupportScreen> {
-  int _selectedTab = 0;
-  final List<String> _tabs = ['المساعدة', 'الدعم', 'اتصل بنا', 'عن التطبيق'];
-  
-  // قائمة الأسئلة الشائعة
-  final List<Map<String, String>> _faqs = [
-    {
-      'question': 'كيف يمكنني الإبلاغ عن مشكلة في المياه؟',
-      'answer': 'يمكنك الإبلاغ عن مشاكل المياه من خلال التبويب الأول "إبلاغ عن خدمة المياه" → اختر نوع المشكلة → املأ البيانات المطلوبة → اضغط على زر "إرسال البلاغ"'
-    },
-    {
-      'question': 'كيف أتابع حالة البلاغ الذي أرسلته؟',
-      'answer': 'يمكنك متابعة حالة البلاغ من خلال قسم "التقارير" → اختر التقرير المناسب → ابحث عن بلاغك باستخدام رقم البلاغ أو اسم العميل'
-    },
-    {
-      'question': 'كيف يمكنني التواصل مع موظف الدعم؟',
-      'answer': 'يمكنك التواصل مع موظف الدعم من خلال التبويب "الدعم" في هذه الشاشة → اختر "محادثة مباشرة" أو اتصل على رقم الدعم الفني'
-    },
-    {
-      'question': 'كيف أعدل بياناتي الشخصية؟',
-      'answer': 'يمكنك تعديل بياناتك الشخصية من خلال القائمة الجانبية → اختر "الإعدادات" → ثم "المعلومات الشخصية" → قم بالتعديلات المطلوبة'
-    },
-    {
-      'question': 'كيف أتصدير تقرير البلاغات؟',
-      'answer': 'اذهب إلى قسم "التقارير" → اختر نوع التقرير → حدد الفترة الزمنية → اضغط على زر "تصدير PDF" → اختر مكان الحفظ'
-    },
-  ];
-
-  // قائمة مشاكل المياه الشائعة
-  final List<Map<String, dynamic>> _commonProblems = [
-    {
-      'problem': 'انقطاع المياه',
-      'solution': 'تحقق من محبس المياه الرئيسي - تأكد من عدم وجود صيانة في المنطقة - اتصل بالدعم الفني',
-      'emergency': true,
-    },
-    {
-      'problem': 'انخفاض ضغط المياه',
-      'solution': 'افصل الأجهزة التي تستخدم المياه - تحقق من وجود تسرب - أبلغ قسم الصيانة',
-      'emergency': false,
-    },
-    {
-      'problem': 'تسرب مياه من خط الأنابيب',
-      'solution': 'اغلق محبس المياه الرئيسي - ابتعد عن منطقة التسرب - أبلغ فوراً بخطورة الموقف',
-      'emergency': true,
-    },
-    {
-      'problem': 'مياه ذات لون أو رائحة غير طبيعية',
-      'solution': 'لا تشرب المياه - استخدم المياه المعبأة - اتصل بقسم جودة المياه فوراً',
-      'emergency': true,
-    },
-  ];
-
-  // قائمة أرقام الطوارئ
-  final List<Map<String, dynamic>> _emergencyContacts = [
-    {
-      'name': 'طوارئ المياه',
-      'number': '07725252103',
-      'description': 'لبلاغات انقطاع المياه والتسربات الخطرة',
-      'icon': Icons.emergency_rounded,
-      'color': Color(0xFFD32F2F),
-    },
-    {
-      'name': 'الدعم الفني للمياه',
-      'number': '07862268894',
-      'description': 'للمساعدة الفنية واستفسارات النظام',
-      'icon': Icons.support_agent_rounded,
-      'color': Color(0xFF1976D2),
-    },
-    {
-      'name': 'شكاوى موظفي المياه',
-      'number': '07758888999',
-      'description': 'للتقارير عن تقصير موظفي المياه',
-      'icon': Icons.person_rounded,
-      'color': Color(0xFFF57C00),
-    },
-    {
-      'name': 'فواتير المياه والمحاسبة',
-      'number': '07663334455',
-      'description': 'لاستفسارات فواتير المياه والدفعات',
-      'icon': Icons.receipt_rounded,
-      'color': Color(0xFF388E3C),
-    },
-  ];
-
-  // دالة للاتصال برقم الهاتف
-  void _makePhoneCall(String phoneNumber) async {
-    final url = 'tel:$phoneNumber';
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('لا يمكن إجراء المكالمة'),
-          backgroundColor: widget.errorColor,
-        ),
-      );
-    }
-  }
-
-  // دالة لإرسال بريد إلكتروني
-  void _sendEmail() async {
-    final email = 'support@water.gov.iq';
-    final subject = 'استفسار - نظام إبلاغات المياه';
-    final body = 'أنا بحاجة إلى مساعدة بخصوص:\n\n\n\nالتاريخ: ${DateFormat('yyyy-MM-dd').format(DateTime.now())}';
-    
-    final url = 'mailto:$email?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
-    
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('لا يمكن فتح تطبيق البريد'),
-          backgroundColor: widget.errorColor,
-        ),
-      );
-    }
-  }
-
-  // دالة لفتح موقع الويب
-  void _openWebsite() async {
-    const url = 'https://www.water.gov.iq';
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('لا يمكن فتح الموقع'),
-          backgroundColor: widget.errorColor,
-        ),
-      );
-    }
-  }
-
-  // دالة لفتح محادثة الدعم المباشر
-  void _openSupportChat() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LiveSupportChatScreen(
-          primaryColor: widget.primaryColor,
-          secondaryColor: widget.secondaryColor,
-        ),
-      ),
-    );
-  }
-
-  // دالة لفتح الأسئلة الشائعة
-  void _openFAQDetail() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => FAQDetailScreen(
-        faqs: _faqs,
-        primaryColor: widget.primaryColor,
-      ),
-    );
-  }
-
-  // دالة لفتح دليل الاستخدام
-  void _openUserGuide() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('دليل الاستخدام'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildGuideStep('1', 'تسجيل الدخول', 'ادخل بيانات الدخول الصحيحة للوصول للنظام'),
-              _buildGuideStep('2', 'الإبلاغ عن مشكلة', 'اختر نوع المشكلة واملأ التفاصيل المطلوبة'),
-              _buildGuideStep('3', 'متابعة البلاغ', 'تابع حالة البلاغ من قسم التقارير'),
-              _buildGuideStep('4', 'التواصل مع الدعم', 'استخدم قسم الدعم للتواصل الفوري'),
-              _buildGuideStep('5', 'تصدير التقارير', 'احفظ التقارير بصيغة PDF للمراجعة'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('إغلاق'),
-          ),
-          ElevatedButton(
-            onPressed: () => _downloadUserGuide(),
-            style: ElevatedButton.styleFrom(backgroundColor: widget.primaryColor),
-            child: Text('تحميل الدليل'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGuideStep(String number, String title, String description) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: widget.backgroundColor,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: widget.primaryColor,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                number,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: widget.textColor,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: widget.textSecondaryColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _downloadUserGuide() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('جاري تحميل دليل الاستخدام...'),
-        backgroundColor: widget.successColor,
-      ),
-    );
-    // Simulate download
-    Future.delayed(Duration(seconds: 2), () {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('تم تحميل الدليل بنجاح'),
-          backgroundColor: widget.successColor,
-        ),
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Icon(Icons.help_outline_rounded, size: 24),
-            SizedBox(width: 8),
-            Text('المساعدة والدعم'),
-          ],
-        ),
-        backgroundColor: widget.primaryColor,
-        elevation: 0,
-        centerTitle: false,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.download_rounded, color: Colors.white),
-            onPressed: _downloadUserGuide,
-            tooltip: 'تحميل دليل الاستخدام',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // تبويبات
-          Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: widget.cardColor,
-              border: Border(
-                bottom: BorderSide(color: widget.borderColor),
-              ),
-            ),
-            child: Row(
-              children: [
-                for (int i = 0; i < _tabs.length; i++)
-                  _buildTabButton(_tabs[i], i),
-              ],
-            ),
-          ),
-
-          // محتوى التبويب المحدد
-          Expanded(
-            child: IndexedStack(
-              index: _selectedTab,
-              children: [
-                _buildHelpTab(),      // تبويب المساعدة
-                _buildSupportTab(),   // تبويب الدعم
-                _buildContactTab(),   // تبويب اتصل بنا
-                _buildAboutTab(),     // تبويب عن التطبيق
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // دالة بناء زر التبويب
-  Widget _buildTabButton(String title, int index) {
-    bool isSelected = _selectedTab == index;
-    
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedTab = index;
-          });
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: isSelected ? widget.secondaryColor : Colors.transparent,
-                width: 3,
-              ),
-            ),
-          ),
-          child: Center(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-                color: isSelected ? widget.primaryColor : widget.textSecondaryColor,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // تبويب المساعدة
-  Widget _buildHelpTab() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // البحث
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: widget.cardColor,
-              border: Border.all(color: widget.borderColor),
-            ),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'ابحث في المساعدة...',
-                prefixIcon: Icon(Icons.search_rounded, color: widget.textSecondaryColor),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-            ),
-          ),
-
-          SizedBox(height: 20),
-
-          // مشاكل المياه الشائعة
-          Text(
-            'مشاكل المياه الشائعة',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: widget.primaryColor,
-            ),
-          ),
-          SizedBox(height: 12),
-          
-          ..._commonProblems.map((problem) => _buildProblemCard(problem)),
-
-          SizedBox(height: 20),
-
-          // الأسئلة الشائعة
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'الأسئلة الشائعة',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: widget.primaryColor,
-                ),
-              ),
-              TextButton(
-                onPressed: _openFAQDetail,
-                child: Text('عرض الكل', style: TextStyle(color: widget.primaryColor)),
-              ),
-            ],
-          ),
-          
-          SizedBox(height: 12),
-          
-          ..._faqs.take(3).map((faq) => _buildFAQItem(faq)),
-
-          SizedBox(height: 20),
-
-          // دليل الاستخدام
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: widget.primaryColor.withOpacity(0.05),
-              border: Border.all(color: widget.primaryColor.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.book_rounded, color: widget.primaryColor),
-                    SizedBox(width: 8),
-                    Text(
-                      'دليل الاستخدام',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: widget.primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12),
-                Text(
-                  'تعرف على كيفية استخدام نظام الإبلاغات خطوة بخطوة',
-                  style: TextStyle(color: widget.textSecondaryColor),
-                ),
-                SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _openUserGuide,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.primaryColor,
-                    minimumSize: Size(double.infinity, 40),
-                  ),
-                  child: Text('فتح دليل الاستخدام'),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  // تبويب الدعم
-  Widget _buildSupportTab() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // محادثة مباشرة
-          Container(
-            padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: widget.cardColor,
-              border: Border.all(color: widget.borderColor),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: widget.primaryColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.chat_rounded, color: widget.primaryColor, size: 30),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'محادثة مباشرة مع الدعم',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: widget.primaryColor,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'تواصل مباشر مع فريق الدعم الفني لحل مشكلتك',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: widget.textSecondaryColor),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _openSupportChat,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.primaryColor,
-                    foregroundColor: Colors.white,
-                    minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.chat_bubble_rounded),
-                      SizedBox(width: 8),
-                      Text('بدء محادثة جديدة'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20),
-
-          // طرق دعم أخرى
-          Text(
-            'طرق دعم أخرى',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: widget.primaryColor,
-            ),
-          ),
-          SizedBox(height: 12),
-
-          GridView.count(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            childAspectRatio: 1.2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            children: [
-              _buildSupportOption(
-                Icons.video_call_rounded,
-                'مكالمة فيديو',
-                'مكالمة فيديو مع فني متخصص',
-                () => _showComingSoon(),
-              ),
-              _buildSupportOption(
-                Icons.screen_share_rounded,
-                'مشاركة شاشة',
-                'مشاركة شاشتك مع الدعم',
-                () => _showComingSoon(),
-              ),
-              _buildSupportOption(
-                Icons.upload_file_rounded,
-                'رفع ملف',
-                'رفع صور أو مستندات للمشكلة',
-                () => _uploadFile(),
-              ),
-              _buildSupportOption(
-                Icons.schedule_rounded,
-                'حجز موعد',
-                'حجز موعد مسبق مع الدعم',
-                () => _scheduleAppointment(),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 20),
-
-          // حالة الدعم
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: widget.successColor.withOpacity(0.1),
-              border: Border.all(color: widget.successColor.withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.check_circle_rounded, color: widget.successColor),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'الدعم متاح الآن',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: widget.successColor,
-                        ),
-                      ),
-                      Text(
-                        'فريق الدعم متاح على مدار 24 ساعة',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: widget.textSecondaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: widget.successColor,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'متصل',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  // تبويب اتصل بنا
-  Widget _buildContactTab() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // معلومات الاتصال
-          Text(
-            'معلومات الاتصال',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: widget.primaryColor,
-            ),
-          ),
-          SizedBox(height: 12),
-
-          ..._emergencyContacts.map((contact) => _buildContactCard(contact)),
-
-          SizedBox(height: 20),
-
-          // وسائل التواصل الاجتماعي
-          Text(
-            'وسائل التواصل الاجتماعي',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: widget.primaryColor,
-            ),
-          ),
-          SizedBox(height: 12),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildSocialMediaButton('فيسبوك', Icons.facebook_rounded, Color(0xFF1877F2), 
-                  () => _openSocialMedia('facebook')),
-              _buildSocialMediaButton('تويتر', Icons.camera_alt_rounded, Color(0xFF1DA1F2), 
-                  () => _openSocialMedia('twitter')),
-              _buildSocialMediaButton('يوتيوب', Icons.video_library_rounded, Color(0xFFFF0000), 
-                  () => _openSocialMedia('youtube')),
-            ],
-          ),
-
-          SizedBox(height: 20),
-
-          // موقعنا
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: widget.cardColor,
-              border: Border.all(color: widget.borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.location_on_rounded, color: widget.primaryColor),
-                    SizedBox(width: 8),
-                    Text(
-                      'موقعنا',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: widget.primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12),
-                Text(
-                  'وزارة المياه - العراق\nبغداد - منطقة الوزارات',
-                  style: TextStyle(color: widget.textColor),
-                ),
-                SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _openMap,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.primaryColor,
-                    minimumSize: Size(double.infinity, 40),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.map_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text('فتح الخريطة'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20),
-
-          // ساعات العمل
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: widget.cardColor,
-              border: Border.all(color: widget.borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.access_time_rounded, color: widget.primaryColor),
-                    SizedBox(width: 8),
-                    Text(
-                      'ساعات العمل',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: widget.primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12),
-                _buildWorkingHoursRow('الأحد - الخميس', '8:00 ص - 4:00 م'),
-                _buildWorkingHoursRow('الجمعة', '8:00 ص - 12:00 م'),
-                _buildWorkingHoursRow('السبت', 'عطلة رسمية'),
-                _buildWorkingHoursRow('الدعم الفني', '24/7'),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  // تبويب عن التطبيق
-  Widget _buildAboutTab() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // معلومات التطبيق
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: widget.primaryColor,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Icon(Icons.water_drop, 
-                      color: Colors.white, size: 40),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'نظام إبلاغات المياه',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: widget.primaryColor,
-                  ),
-                ),
-                Text(
-                  'وزارة المياه - العراق',
-                  style: TextStyle(
-                    color: widget.textSecondaryColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20),
-
-          // إصدار التطبيق
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: widget.cardColor,
-              border: Border.all(color: widget.borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'معلومات الإصدار',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: widget.primaryColor,
-                  ),
-                ),
-                SizedBox(height: 12),
-                _buildAboutInfoRow('الإصدار', '2.0.0'),
-                _buildAboutInfoRow('تاريخ البناء', '2024-01-25'),
-                _buildAboutInfoRow('رقم البناء', '20240125.1'),
-                _buildAboutInfoRow('الترخيص', 'حكومي - وزارة المياه'),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20),
-
-          // فريق التطوير
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: widget.cardColor,
-              border: Border.all(color: widget.borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'فريق التطوير',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: widget.primaryColor,
-                  ),
-                ),
-                SizedBox(height: 12),
-                _buildTeamMember('فاضل علي', 'مطور رئيسي', Icons.code_rounded),
-                _buildTeamMember('أحمد محمد', 'مصمم واجهات', Icons.design_services_rounded),
-                _buildTeamMember('سارة عبدالله', 'مديرة مشروع', Icons.engineering_rounded),
-                _buildTeamMember('خالد إبراهيم', 'دعم فني', Icons.support_agent_rounded),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20),
-
-          // سياسة الخصوصية والشروط
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: widget.cardColor,
-              border: Border.all(color: widget.borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'الشروط والسياسات',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: widget.primaryColor,
-                  ),
-                ),
-                SizedBox(height: 12),
-                ListTile(
-                  leading: Icon(Icons.privacy_tip_rounded, color: widget.primaryColor),
-                  title: Text('سياسة الخصوصية'),
-                  trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                  onTap: () => _openPrivacyPolicy(),
-                ),
-                Divider(),
-                ListTile(
-                  leading: Icon(Icons.description_rounded, color: widget.primaryColor),
-                  title: Text('شروط الاستخدام'),
-                  trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                  onTap: () => _openTermsOfService(),
-                ),
-                Divider(),
-                ListTile(
-                  leading: Icon(Icons.security_rounded, color: widget.primaryColor),
-                  title: Text('الأمان والحماية'),
-                  trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                  onTap: () => _openSecurityInfo(),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20),
-
-          // تحديث التطبيق
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: widget.successColor.withOpacity(0.1),
-              border: Border.all(color: widget.successColor.withOpacity(0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.update_rounded, color: widget.successColor),
-                    SizedBox(width: 8),
-                    Text(
-                      'تحديث التطبيق',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: widget.successColor,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'الإصدار الحالي هو الأحدث\nآخر تحديث: 2024-01-20',
-                  style: TextStyle(color: widget.textSecondaryColor),
-                ),
-                SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _checkForUpdates,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.successColor,
-                    minimumSize: Size(double.infinity, 40),
-                  ),
-                  child: Text('التحقق من التحديثات'),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  // دوال مساعدة
-  Widget _buildProblemCard(Map<String, dynamic> problem) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: widget.cardColor,
-        border: Border.all(color: widget.borderColor),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: problem['emergency'] 
-                  ? widget.errorColor.withOpacity(0.1)
-                  : widget.warningColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              problem['emergency'] ? Icons.warning_rounded : Icons.info_rounded,
-              color: problem['emergency'] ? widget.errorColor : widget.warningColor,
-              size: 16,
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  problem['problem'],
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: widget.textColor,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  problem['solution'],
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: widget.textSecondaryColor,
-                  ),
-                ),
-                if (problem['emergency'])
-                  Container(
-                    margin: EdgeInsets.only(top: 4),
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: widget.errorColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'طارئ',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: widget.errorColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFAQItem(Map<String, String> faq) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      child: ExpansionTile(
-        leading: Icon(Icons.help_outline_rounded, color: widget.primaryColor),
-        title: Text(
-          faq['question']!,
-          style: TextStyle(fontSize: 14),
-        ),
-        children: [
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              faq['answer']!,
-              style: TextStyle(
-                color: widget.textSecondaryColor,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSupportOption(IconData icon, String title, String subtitle, VoidCallback onTap) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: widget.primaryColor, size: 32),
-              SizedBox(height: 8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: widget.textSecondaryColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContactCard(Map<String, dynamic> contact) {
-    return Card(
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: contact['color'].withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(contact['icon'], color: contact['color']),
-        ),
-        title: Text(contact['name']),
-        subtitle: Text(contact['description']),
-        trailing: ElevatedButton(
-          onPressed: () => _makePhoneCall(contact['number']),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: contact['color'],
-            foregroundColor: Colors.white,
-            minimumSize: Size(0, 0),
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          ),
-          child: Text('اتصال'),
-        ),
-        onTap: () => _showContactDetails(contact),
-      ),
-    );
-  }
-
-  Widget _buildSocialMediaButton(String platform, IconData icon, Color color, VoidCallback onTap) {
-    return Column(
-      children: [
-        Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: Icon(icon, color: color),
-            onPressed: onTap,
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(platform, style: TextStyle(fontSize: 10)),
-      ],
-    );
-  }
-
-  Widget _buildWorkingHoursRow(String day, String hours) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(day, style: TextStyle(color: widget.textColor)),
-          Text(hours, style: TextStyle(
-            color: widget.textSecondaryColor,
-            fontWeight: FontWeight.bold,
-          )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAboutInfoRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(color: widget.textSecondaryColor)),
-          Text(value, style: TextStyle(
-            color: widget.textColor,
-            fontWeight: FontWeight.bold,
-          )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTeamMember(String name, String role, IconData icon) {
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: widget.primaryColor.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: widget.primaryColor, size: 20),
-      ),
-      title: Text(name),
-      subtitle: Text(role),
-    );
-  }
-
-  // دوال الإجراءات
-  void _showComingSoon() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('هذه الميزة قيد التطوير'),
-        backgroundColor: widget.warningColor,
-      ),
-    );
-  }
-
-  void _uploadFile() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(Icons.photo_library_rounded),
-              title: Text('معرض الصور'),
-              onTap: () => _selectImage(),
-            ),
-            ListTile(
-              leading: Icon(Icons.camera_alt_rounded),
-              title: Text('الكاميرا'),
-              onTap: () => _takePhoto(),
-            ),
-            ListTile(
-              leading: Icon(Icons.insert_drive_file_rounded),
-              title: Text('الملفات'),
-              onTap: () => _selectFile(),
-            ),
-            SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('إلغاء'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _selectImage() {
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('جاري اختيار صورة...'),
-        backgroundColor: widget.primaryColor,
-      ),
-    );
-  }
-
-  void _takePhoto() {
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('جاري فتح الكاميرا...'),
-        backgroundColor: widget.primaryColor,
-      ),
-    );
-  }
-
-  void _selectFile() {
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('جاري اختيار ملف...'),
-        backgroundColor: widget.primaryColor,
-      ),
-    );
-  }
-
-  void _scheduleAppointment() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('حجز موعد مع الدعم'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'سبب الحجز',
-                  hintText: 'وصف المشكلة',
-                ),
-                maxLines: 3,
-              ),
-              SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'التاريخ والوقت',
-                  hintText: 'اختر التاريخ والوقت',
-                  suffixIcon: Icon(Icons.calendar_today),
-                ),
-                onTap: () => _selectDateTime(),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'طريقة الاتصال',
-                  hintText: 'هاتف / فيديو',
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('تم حجز الموعد بنجاح'),
-                  backgroundColor: widget.successColor,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: widget.primaryColor),
-            child: Text('حجز'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _selectDateTime() {
-    showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(Duration(days: 30)),
-    ).then((date) {
-      if (date != null) {
-        showTimePicker(
-          context: context,
-          initialTime: TimeOfDay.now(),
-        );
-      }
-    });
-  }
-
-  void _showContactDetails(Map<String, dynamic> contact) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-          Icon(contact['icon'], color: contact['color']),
-          SizedBox(width: 8),
-          Text(contact['name']),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'رقم الهاتف: ${contact['number']}',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(contact['description']),
-            SizedBox(height: 16),
-            Text(
-              'ساعات العمل: 24/7',
-              style: TextStyle(fontSize: 12, color: widget.textSecondaryColor),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('إغلاق'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _makePhoneCall(contact['number']);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: contact['color']),
-            child: Text('اتصال فوري'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _openSocialMedia(String platform) {
-    String url = '';
-    switch (platform) {
-      case 'facebook':
-        url = 'https://www.facebook.com';
-        break;
-      case 'twitter':
-        url = 'https://www.twitter.com';
-        break;
-      case 'youtube':
-        url = 'https://www.youtube.com';
-        break;
-    }
-    
-    launch(url).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('لا يمكن فتح الرابط'),
-          backgroundColor: widget.errorColor,
-        ),
-      );
-    });
-  }
-
-  void _openMap() async {
-    const url = 'https://maps.google.com/?q=وزارة+المياه+العراق';
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('لا يمكن فتح الخريطة'),
-          backgroundColor: widget.errorColor,
-        ),
-      );
-    }
-  }
-
-  void _openPrivacyPolicy() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('سياسة الخصوصية'),
-        content: SingleChildScrollView(
-          child: Text(
-            '''
-            سياسة الخصوصية لنظام إبلاغات المياه
-            
-            1. جمع المعلومات:
-            - نجمع المعلومات اللازمة لتقديم الخدمة
-            - نحافظ على سرية بيانات المستخدمين
-            - لا نشارك المعلومات مع أطراف ثالثة
-            
-            2. استخدام المعلومات:
-            - لتحسين الخدمة
-            - للتواصل مع المستخدمين
-            - لتوليد التقارير الإحصائية
-            
-            3. حماية المعلومات:
-            - تشفير البيانات الحساسة
-            - حماية الخوادم من الاختراق
-            - تحديث أنظمة الأمان باستمرار
-            
-            4. حقوق المستخدم:
-            - حق الوصول للبيانات
-            - حق التعديل أو الحذف
-            - حق الاعتراض على المعالجة
-            
-            تاريخ آخر تحديث: 2024-01-25
-            ''',
-            style: TextStyle(fontSize: 12),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('إغلاق'),
-          ),
-          ElevatedButton(
-            onPressed: () => _downloadPrivacyPolicy(),
-            style: ElevatedButton.styleFrom(backgroundColor: widget.primaryColor),
-            child: Text('تحميل'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _openTermsOfService() {
-    // Similar to privacy policy
-  }
-
-  void _openSecurityInfo() {
-    // Similar to privacy policy
-  }
-
-  void _downloadPrivacyPolicy() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('جاري تحميل سياسة الخصوصية'),
-        backgroundColor: widget.successColor,
-      ),
-    );
-  }
-
-  void _checkForUpdates() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('جاري التحقق من التحديثات...'),
-        backgroundColor: widget.primaryColor,
-      ),
-    );
-    
-    Future.delayed(Duration(seconds: 2), () {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('الإصدار الحالي هو الأحدث'),
-          backgroundColor: widget.successColor,
-        ),
-      );
-    });
-  }
-}
-
-// === شاشة الأسئلة الشائعة المفصلة ===
-class FAQDetailScreen extends StatelessWidget {
-  final List<Map<String, String>> faqs;
-  final Color primaryColor;
-
-  FAQDetailScreen({required this.faqs, required this.primaryColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          // رأس الشاشة
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: primaryColor,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.help_outline_rounded, color: Colors.white),
-                SizedBox(width: 8),
-                Text(
-                  'الأسئلة الشائعة',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Spacer(),
-                IconButton(
-                  icon: Icon(Icons.close_rounded, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-
-          // محتوى الأسئلة
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: faqs.length,
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: EdgeInsets.only(bottom: 12),
-                  child: ExpansionTile(
-                    leading: CircleAvatar(
-                      backgroundColor: primaryColor.withOpacity(0.1),
-                      child: Text(
-                        (index + 1).toString(),
-                        style: TextStyle(
-                          color: primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      faqs[index]['question']!,
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text(
-                          faqs[index]['answer']!,
-                          style: TextStyle(
-                            color: Colors.grey[700],
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // زر إغلاق
-          Container(
-            padding: EdgeInsets.all(16),
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                minimumSize: Size(double.infinity, 50),
-              ),
-              child: Text('إغلاق'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// === شاشة محادثة الدعم المباشر ===
-class LiveSupportChatScreen extends StatefulWidget {
-  final Color primaryColor;
-  final Color secondaryColor;
-
-  LiveSupportChatScreen({required this.primaryColor, required this.secondaryColor});
-
-  @override
-  _LiveSupportChatScreenState createState() => _LiveSupportChatScreenState();
-}
-
-class _LiveSupportChatScreenState extends State<LiveSupportChatScreen> {
-  final TextEditingController _messageController = TextEditingController();
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'text': 'مرحباً! أنا فاضل من فريق الدعم الفني لوزارة المياه، كيف يمكنني مساعدتك اليوم؟',
-      'isUser': false,
-      'time': 'الآن',
-      'sender': 'فاضل علي - الدعم الفني للمياه'
-    }
-  ];
-
-  void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
-
-    final message = _messageController.text;
-    setState(() {
-      _messages.add({
-        'text': message,
-        'isUser': true,
-        'time': 'الآن',
-        'sender': 'أنت'
-      });
-    });
-
-    _messageController.clear();
-
-    // Simulate response
-    Future.delayed(Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _messages.add({
-            'text': _getResponse(message),
-            'isUser': false,
-            'time': 'الآن',
-            'sender': 'فاضل علي - الدعم الفني للمياه'
-          });
-        });
-      }
-    });
-  }
-
-  String _getResponse(String message) {
-    if (message.contains('انقطاع') || message.contains('ماء') || message.contains('مياه')) {
-      return 'أفهم أنك تواجه مشكلة في المياه. هل يمكنك إخباري بالمنطقة والوقت الذي بدأ فيه الانقطاع؟';
-    } else if (message.contains('فاتورة') || message.contains('دفع')) {
-      return 'للمساعدة في مشاكل فواتير المياه، أحتاج إلى رقم الفاتورة أو رقم حسابك. هل يمكنك توفير هذه المعلومات؟';
-    } else if (message.contains('موظف') || message.contains('تأخير')) {
-      return 'أنا آسف لسماع ذلك. سأساعدك في متابعة الأمر مع إدارة الموظفين. هل يمكنك إخباري باسم الموظف وتاريخ الحادثة؟';
-    } else if (message.contains('تطبيق') || message.contains('برنامج')) {
-      return 'لحل مشاكل التطبيق، أحتاج معرفة: نوع الجهاز، إصدار التطبيق، ومتى تظهر المشكلة بالضبط؟';
-    } else if (message.contains('ضغط') || message.contains('جودة')) {
-      return 'للمساعدة في مشاكل ضغط أو جودة المياه، أحتاج معرفة: المنطقة، وقت المشكلة، وأي تفاصيل إضافية؟';
-    } else {
-      return 'شكراً لتواصلكم مع وزارة المياه. سأساعدك في حل هذه المشكلة. هل يمكنك تقديم مزيد من التفاصيل؟';
-    }
-  }
-
-  void _sendQuickResponse(String response) {
-    setState(() {
-      _messages.add({
-        'text': response,
-        'isUser': true,
-        'time': 'الآن',
-        'sender': 'أنت'
-      });
-    });
-
-    Future.delayed(Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _messages.add({
-            'text': 'شكراً للمعلومات. سأقوم بمتابعة الأمر مع القسم المختص وسأعود إليك بالتحديثات.',
-            'isUser': false,
-            'time': 'الآن',
-            'sender': 'فاضل علي - الدعم الفني للمياه'
-          });
-        });
-      }
-    });
-  }
-
-  void _endChat() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('إنهاء المحادثة'),
-        content: Text('هل تريد إنهاء المحادثة؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('البقاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('إنهاء'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('محادثة الدعم المباشر'),
-            Text('متصل الآن', style: TextStyle(fontSize: 12)),
-          ],
-        ),
-        backgroundColor: widget.primaryColor,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded),
-          onPressed: () => _endChat(),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.call_rounded),
-            onPressed: () => _makeVoiceCall(),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // معلومات الدعم
-          Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: widget.primaryColor.withOpacity(0.05),
-              border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: widget.primaryColor,
-                  child: Icon(Icons.support_agent_rounded, color: Colors.white),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('فاضل علي - الدعم الفني للمياه', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text('متخصص في مشاكل المياه والبلاغات', style: TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text('متصل', style: TextStyle(color: Colors.white, fontSize: 10)),
-                ),
-              ],
-            ),
-          ),
-
-          // الرسائل
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(16),
-              reverse: true,
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[_messages.length - 1 - index];
-                return _buildMessageBubble(message);
-              },
-            ),
-          ),
-
-          // ردود سريعة
-          Container(
-            height: 50,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              children: [
-                _buildQuickResponseButton('انقطاع مياه'),
-                _buildQuickResponseButton('مشكلة فاتورة'),
-                _buildQuickResponseButton('تأخير فني'),
-                _buildQuickResponseButton('جودة المياه'),
-              ],
-            ),
-          ),
-
-          // إدخال الرسالة
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey[200]!)),
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.attach_file_rounded, color: widget.primaryColor),
-                  onPressed: _attachFile,
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      hintText: 'اكتب رسالتك...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send_rounded, color: widget.primaryColor),
-                  onPressed: _sendMessage,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageBubble(Map<String, dynamic> message) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: message['isUser'] ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!message['isUser'])
-            CircleAvatar(
-              backgroundColor: widget.primaryColor,
-              radius: 16,
-              child: Icon(Icons.support_agent_rounded, color: Colors.white, size: 14),
-            ),
-          SizedBox(width: 8),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: message['isUser'] ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                if (!message['isUser'])
-                  Text(
-                    message['sender'],
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                  ),
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: message['isUser'] 
-                        ? widget.primaryColor.withOpacity(0.9)
-                        : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    message['text'],
-                    style: TextStyle(
-                      color: message['isUser'] ? Colors.white : Colors.black,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  message['time'],
-                  style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-                ),
-              ],
-            ),
-          ),
-          if (message['isUser'])
-            SizedBox(width: 8),
-          if (message['isUser'])
-            CircleAvatar(
-              backgroundColor: widget.secondaryColor,
-              radius: 16,
-              child: Icon(Icons.person_rounded, color: Colors.white, size: 14),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickResponseButton(String text) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 4),
-      child: ElevatedButton(
-        onPressed: () => _sendQuickResponse(text),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: widget.primaryColor.withOpacity(0.1),
-          foregroundColor: widget.primaryColor,
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-        child: Text(text, style: TextStyle(fontSize: 12)),
-      ),
-    );
-  }
-
-  void _makeVoiceCall() {
-    // Implementation for voice call
-  }
-
-  void _attachFile() {
-    // Implementation for file attachment
   }
 }
 

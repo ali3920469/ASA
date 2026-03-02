@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mang_mu/widgets/my_buttn.dart';
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/esignin_screen.dart';
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/eregesyer_screen.dart';
+import 'package:mang_mu/screens/employee/Shared%20Services/esignin_screen.dart';
+import 'package:mang_mu/screens/employee/Shared%20Services/eregesyer_screen.dart';
 import 'package:mang_mu/screens/zemp_and_citizen/mainscren.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:ui';

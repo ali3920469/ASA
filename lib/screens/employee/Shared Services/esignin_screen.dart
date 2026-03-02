@@ -4,36 +4,29 @@ import 'dart:ui';
 
 // شاشات قسم الكهرباء
 import 'package:mang_mu/screens/employee/employee_electricity/billing_accountant_electrity.dart';
-import 'package:mang_mu/screens/employee/employee_electricity/consumption_monitoring_officer_electrity.dart';
 import 'package:mang_mu/screens/employee/employee_electricity/maintenance_technician_electrity.dart';
-import 'package:mang_mu/screens/employee/employee_electricity/quality_auditor_electrity.dart';
 import 'package:mang_mu/screens/employee/employee_electricity/system_supervisor_electrity.dart';
 import 'package:mang_mu/screens/employee/employee_electricity/reporting_officer_electricity.dart';
 
 // شاشات قسم المياه
-import 'package:mang_mu/screens/employee/employee_water/quality_auditor_water.dart';
 import 'package:mang_mu/screens/employee/employee_water/reporting_officer_water.dart';
 import 'package:mang_mu/screens/employee/employee_water/water_billing_accountant.dart';
-import 'package:mang_mu/screens/employee/employee_water/water_consumption_monitor.dart';
-import 'package:mang_mu/screens/delete_service_employee/water_emergency_officer.dart';
 import 'package:mang_mu/screens/employee/employee_water/water_maintenance_technician.dart';
 import 'package:mang_mu/screens/employee/employee_water/water_supervisor.dart';
 
 // شاشات قسم النفايات
-import 'package:mang_mu/screens/employee/employee_wast/container_request_manager.dart';
 import 'package:mang_mu/screens/employee/employee_wast/reporting_officer_wast.dart';
 import 'package:mang_mu/screens/employee/employee_wast/system_supervisor_waste.dart';
 import 'package:mang_mu/screens/employee/employee_wast/waste_billing_officer.dart';
 import 'package:mang_mu/screens/employee/employee_wast/waste_cleaning_worker.dart';
-import 'package:mang_mu/screens/delete_service_employee/waste_premium_specialist.dart';
 import 'package:mang_mu/screens/employee/employee_wast/waste_scheduler.dart';
 
 // الشاشات الجديدة للأقسام المضافة
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/account_auditor.dart';
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/app_developer.dart';
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/event_employee.dart';
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/system_administrator.dart';
-
+import 'package:mang_mu/screens/employee/Shared Services/account_auditor.dart';
+import 'package:mang_mu/screens/employee/Shared Services/app_developer.dart';
+import 'package:mang_mu/screens/employee/Shared Services/event_employee.dart';
+import 'package:mang_mu/screens/employee/Shared Services/system_administrator.dart';
+import 'package:mang_mu/screens/employee/Shared Services/offers_gifts_specialist.dart';
 class EsigninScreen extends StatefulWidget {
   static const String screenroot = 'esignin_screen';
 
@@ -64,46 +57,39 @@ class _EsigninScreenState extends State<EsigninScreen>
   ];
 
   // قائمة الأقسام الرئيسية (تمت إضافة أقسام جديدة)
-  final List<String> _sections = [
-    'كهرباء',
-    'ماء',
-    'نفايات',
-    'المالية',
-    'التقنية',
-  ];
+  final List<String> _sections = ['كهرباء', 'ماء', 'نفايات', 'المالية', 'التقنية'];
 
   // قائمة التخصصات لكل قسم (تمت إضافة التخصصات الجديدة)
-  final Map<String, List<String>> _specializations = {
-    'كهرباء': [
-      'محاسب الفواتير',
-      'مراقب الاستهلاك',
-      'فني الصيانة',
-      'مدقق الجودة',
-      'مسؤول الإبلاغ',
-      'مسؤول محطة الكهرباء',
-    ],
-    'ماء': [
-      'مدقق الجودة',
-      'مسؤول الإبلاغ عن المياه',
-      'محاسب الفواتير',
-      'مراقب الاستهلاك',
-      'ضابط الطوارئ',
-      'فني الصيانة',
-      'مسؤول محطة الماء',
-    ],
-    'نفايات': [
-      'مدير طلبات الحاويات',
-      'مسؤول الاستجابة للطوارئ',
-      'مسؤول الابلاغ',
-      'مشرف النظام',
-      'موظف الفواتير',
-      'عامل النظافة',
-      'أخصائي الخدمات المميزة',
-      'جدولة النفايات',
-    ],
-    'المالية': ['محرر الحسابات'],
-    'التقنية': ['مطور البرنامج', 'موظف الأحداث', 'مدير النظام'],
-  };
+final Map<String, List<String>> _specializations = {
+  'كهرباء': [
+    'محاسب الفواتير',
+    'فني الصيانة',
+    'مسؤول الإبلاغ',
+    'مسؤول محطة الكهرباء',
+  ],
+  'ماء': [
+    'مسؤول الإبلاغ عن المياه',
+    'محاسب الفواتير',
+    'فني الصيانة',
+    'مسؤول محطة الماء',
+  ],
+  'نفايات': [
+    'مسؤول الابلاغ',
+    'مشرف النظام',
+    'موظف الفواتير',
+    'عامل النظافة',
+    'جدولة النفايات',
+  ],
+  'المالية': [
+    'محرر الحسابات',
+  ],
+  'التقنية': [
+    'مطور البرنامج',
+    'موظف الأحداث',
+    'مدير النظام',
+    'أخصائي تقديم الهدايا',  // تم إضافة هذا التخصص الجديد
+  ],
+};
 
   @override
   void initState() {
@@ -153,198 +139,100 @@ class _EsigninScreenState extends State<EsigninScreen>
         setState(() => _isLoading = false);
 
         // التحقق من القسم والتخصص والتوجيه للشاشات المناسبة
-        print(
-          'تم تسجيل الدخول كـ: $_selectedSection - $_selectedSpecialization',
-        );
-
+        print('تم تسجيل الدخول كـ: $_selectedSection - $_selectedSpecialization');
+        
         // توجيه للشاشات الجديدة
-        if (_selectedSection == 'المالية' &&
-            _selectedSpecialization == 'محرر الحسابات') {
+        if (_selectedSection == 'المالية' && _selectedSpecialization == 'محرر الحسابات') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const AccountAuditorHome()),
           );
-        } else if (_selectedSection == 'التقنية' &&
-            _selectedSpecialization == 'مطور البرنامج') {
+        } else if (_selectedSection == 'التقنية' && _selectedSpecialization == 'مطور البرنامج') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const AppDeveloper()),
           );
-        } else if (_selectedSection == 'التقنية' &&
-            _selectedSpecialization == 'موظف الأحداث') {
+        } else if (_selectedSection == 'التقنية' && _selectedSpecialization == 'موظف الأحداث') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const EventEmployee()),
           );
-        } else if (_selectedSection == 'التقنية' &&
-            _selectedSpecialization == 'مدير النظام') {
+        } else if (_selectedSection == 'التقنية' && _selectedSpecialization == 'مدير النظام') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const SystemAdministrator(),
-            ),
+            MaterialPageRoute(builder: (context) => const SystemAdministrator()),
           );
-        }
-        // التوجيه للشاشات القديمة (نفس الكود السابق مع تصحيح الأخطاء)
-        else if (_selectedSection == 'كهرباء' &&
-            _selectedSpecialization == 'محاسب الفواتير') {
+        }else if (_selectedSection == 'التقنية' && _selectedSpecialization == 'أخصائي تقديم الهدايا') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const OffersGiftsSpecialist()), // تأكد من إنشاء هذه الشاشة
+        );
+      }
+
+        else if (_selectedSection == 'كهرباء' && _selectedSpecialization == 'محاسب الفواتير') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const BillingAccountantScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const BillingAccountantScreen()),
           );
-        } else if (_selectedSection == 'كهرباء' &&
-            _selectedSpecialization == 'مراقب الاستهلاك') {
+        } else if (_selectedSection == 'كهرباء' && _selectedSpecialization == 'فني الصيانة') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const ConsumptionMonitoringOfficerScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const MaintenanceTechnicianScreen()),
           );
-        } else if (_selectedSection == 'كهرباء' &&
-            _selectedSpecialization == 'فني الصيانة') {
+        } else if (_selectedSection == 'كهرباء' && _selectedSpecialization == 'مسؤول محطة الكهرباء') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const MaintenanceTechnicianScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const SystemSupervisorScreen()),
           );
-        } else if (_selectedSection == 'كهرباء' &&
-            _selectedSpecialization == 'مدقق الجودة') {
+        } else if (_selectedSection == 'كهرباء' && _selectedSpecialization == 'مسؤول الإبلاغ') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const QualityAuditorScreen(),
-            ),
+            MaterialPageRoute(builder: (context) =>  ReportingOfficerElectricityScreen()),
           );
-        } else if (_selectedSection == 'كهرباء' &&
-            _selectedSpecialization == 'مسؤول محطة الكهرباء') {
+        } else if (_selectedSection == 'ماء' && _selectedSpecialization == 'محاسب الفواتير') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const SystemSupervisorScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const WaterBillingAccountantScreen()),
           );
-        } else if (_selectedSection == 'كهرباء' &&
-            _selectedSpecialization == 'مسؤول الإبلاغ') {
+        } else if (_selectedSection == 'ماء' && _selectedSpecialization == 'فني الصيانة') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => ReportingOfficerElectricityScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const WaterMaintenanceTechnicianScreen()),
           );
-        } else if (_selectedSection == 'ماء' &&
-            _selectedSpecialization == 'مدقق الجودة') {
+        } else if (_selectedSection == 'ماء' && _selectedSpecialization == 'مسؤول محطة الماء') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const QualityAuditorWaterScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const WaterSupervisorScreen()),
           );
-        } else if (_selectedSection == 'ماء' &&
-            _selectedSpecialization == 'محاسب الفواتير') {
+        } else if (_selectedSection == 'ماء' && _selectedSpecialization == 'مسؤول الإبلاغ عن المياه') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const WaterBillingAccountantScreen(),
-            ),
+            MaterialPageRoute(builder: (context) =>  ReportingOfficerWaterScreen()),
           );
-        } else if (_selectedSection == 'ماء' &&
-            _selectedSpecialization == 'مراقب الاستهلاك') {
+        }else if (_selectedSection == 'نفايات' && _selectedSpecialization == 'مسؤول الابلاغ') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const WaterConsumptionMonitorScreen(),
-            ),
+            MaterialPageRoute(builder: (context) =>  ReportingOfficerWasteScreen()),
           );
-        } else if (_selectedSection == 'ماء' &&
-            _selectedSpecialization == 'ضابط الطوارئ') {
+        } else if (_selectedSection == 'نفايات' && _selectedSpecialization == 'مشرف النظام') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const WaterEmergencyOfficerScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const SystemSupervisorWasteScreen()),
           );
-        } else if (_selectedSection == 'ماء' &&
-            _selectedSpecialization == 'فني الصيانة') {
+        } else if (_selectedSection == 'نفايات' && _selectedSpecialization == 'موظف الفواتير') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const WaterMaintenanceTechnicianScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const WasteBillingOfficerScreen()),
           );
-        } else if (_selectedSection == 'ماء' &&
-            _selectedSpecialization == 'مسؤول محطة الماء') {
+        } else if (_selectedSection == 'نفايات' && _selectedSpecialization == 'عامل النظافة') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const WaterSupervisorScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const WasteCleaningWorkerScreen()),
           );
-        } else if (_selectedSection == 'ماء' &&
-            _selectedSpecialization == 'مسؤول الإبلاغ عن المياه') {
+        }else if (_selectedSection == 'نفايات' && _selectedSpecialization == 'جدولة النفايات') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => ReportingOfficerWaterScreen(),
-            ),
-          );
-        } else if (_selectedSection == 'نفايات' &&
-            _selectedSpecialization == 'مدير طلبات الحاويات') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ContainerRequestManager(),
-            ),
-          );
-        } else if (_selectedSection == 'نفايات' &&
-            _selectedSpecialization == 'مسؤول الابلاغ') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ReportingOfficerWasteScreen(),
-            ),
-          );
-        } else if (_selectedSection == 'نفايات' &&
-            _selectedSpecialization == 'مشرف النظام') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const SystemSupervisorWasteScreen(),
-            ),
-          );
-        } else if (_selectedSection == 'نفايات' &&
-            _selectedSpecialization == 'موظف الفواتير') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const WasteBillingOfficerScreen(),
-            ),
-          );
-        } else if (_selectedSection == 'نفايات' &&
-            _selectedSpecialization == 'عامل النظافة') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const WasteCleaningWorkerScreen(),
-            ),
-          );
-        } else if (_selectedSection == 'نفايات' &&
-            _selectedSpecialization == 'أخصائي الخدمات المميزة') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const WastePremiumSpecialistScreen(),
-            ),
-          );
-        } else if (_selectedSection == 'نفايات' &&
-            _selectedSpecialization == 'جدولة النفايات') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const EmployeeScheduleScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const WasteSchedulerApp()),
           );
         }
       });
@@ -446,12 +334,7 @@ class _EsigninScreenState extends State<EsigninScreen>
                                 boxShadow: [
                                   BoxShadow(
                                     color: isDarkMode
-                                        ? const Color.fromARGB(
-                                            255,
-                                            185,
-                                            37,
-                                            37,
-                                          ).withOpacity(0.4)
+                                        ? const Color.fromARGB(255, 185, 37, 37).withOpacity(0.4)
                                         : Colors.grey.withOpacity(0.2),
                                     blurRadius: 30,
                                     spreadRadius: 5,
@@ -481,21 +364,19 @@ class _EsigninScreenState extends State<EsigninScreen>
                                   const SizedBox(height: 15),
                                   AnimatedDefaultTextStyle(
                                     duration: const Duration(milliseconds: 300),
-                                    style: theme.textTheme.headlineMedium!
-                                        .copyWith(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w800,
-                                          fontFamily: 'Tajawal',
-                                          color: Colors.white,
-                                          shadows: [
-                                            Shadow(
-                                              color: theme.primaryColor
-                                                  .withOpacity(0.3),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ],
+                                    style: theme.textTheme.headlineMedium!.copyWith(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w800,
+                                      fontFamily: 'Tajawal',
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                          color: theme.primaryColor.withOpacity(0.3),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
                                         ),
+                                      ],
+                                    ),
                                     child: const Text('تسجيل دخول الموظفين'),
                                   ),
                                 ],
@@ -578,10 +459,7 @@ class _EsigninScreenState extends State<EsigninScreen>
                                 _isLoading
                                     ? const Center(
                                         child: CircularProgressIndicator(
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                         ),
                                       )
                                     : _buildEnhancedAuthButton(
@@ -633,9 +511,7 @@ class _EsigninScreenState extends State<EsigninScreen>
                       'بلدية المدينة الذكية © ${DateTime.now().year}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 14,
-                        color: theme.textTheme.bodyLarge?.color?.withOpacity(
-                          0.7,
-                        ),
+                        color: theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
                         fontFamily: 'Tajawal',
                       ),
                     ),

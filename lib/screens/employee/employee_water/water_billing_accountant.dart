@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:mang_mu/screens/employee/Employee_Shared%20Services/esignin_screen.dart';
+import 'package:mang_mu/screens/employee/Shared Services/esignin_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:mang_mu/providers/theme_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import 'dart:typed_data';
+import 'dart:async';
 
 class WaterBillingAccountantScreen extends StatefulWidget {
   static const String screenRoute = '/water-billing-accountant';
@@ -30,6 +30,7 @@ class WaterBillingAccountantScreenState extends State<WaterBillingAccountantScre
   String? _selectedWeek;
   String? _selectedMonth;
   int _currentReportTab = 0;
+  
   // إضافة متغيرات البحث
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -38,6 +39,13 @@ class WaterBillingAccountantScreenState extends State<WaterBillingAccountantScre
   String _transferSearchQuery = '';
   final TextEditingController _transferSearchController = TextEditingController();
   String _selectedPaymentMethodFilter = 'الكل'; // فلتر طريقة الدفع
+
+  // إضافة متغيرات التحديث
+  bool _isRefreshingSubscribers = false;
+  bool _isRefreshingWaterBills = false;
+  bool _isRefreshingReports = false;
+  bool _isRefreshingPaymentMethods = false;
+  bool _isRefreshingComplaints = false;
 
   // ألوان وزارة المياه (أزرق)
   final Color _primaryColor = Color.fromARGB(255, 30, 136, 229); // أزرق وزارة المياه
@@ -95,7 +103,7 @@ class WaterBillingAccountantScreenState extends State<WaterBillingAccountantScre
   final List<String> _months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 
   // بيانات المشتركين (المواطنين)
-  final List<Map<String, dynamic>> subscribers = [
+  List<Map<String, dynamic>> subscribers = [
     {
       'id': 'SUB-2024-001',
       'name': 'أحمد محمد',
@@ -132,7 +140,7 @@ class WaterBillingAccountantScreenState extends State<WaterBillingAccountantScre
   ];
 
   // بيانات فواتير المياه
-  final List<Map<String, dynamic>> waterBills = [
+  List<Map<String, dynamic>> waterBills = [
     {
       'id': 'WINV-2024-001',
       'subscriberId': 'SUB-2024-001',
@@ -382,7 +390,7 @@ class WaterBillingAccountantScreenState extends State<WaterBillingAccountantScre
   ];
   
   // بيانات التحويلات لكل طريقة دفع
-  final List<Map<String, dynamic>> paymentTransfers = [
+  List<Map<String, dynamic>> paymentTransfers = [
     {
       'id': 'WTRF-2024-001',
       'paymentMethodId': 'visa',
@@ -466,7 +474,268 @@ class WaterBillingAccountantScreenState extends State<WaterBillingAccountantScre
       'paymentLocation': 'مكتب الخدمة - الكرخ',
     },
   ];
+  
+  // بيانات البلاغات - خاصة بالفواتير فقط
+  List<Map<String, dynamic>> complaintBills = [
+    {
+      'id': 'WCMP-BILL-2024-001',
+      'citizenName': 'أحمد محمد',
+      'citizenId': 'SUB-2024-001',
+      'billId': 'WINV-2024-001',
+      'billAmount': 61518,
+      'title': 'فاتورة مبالغ فيها',
+      'description': 'قيمة الفاتورة لهذا الشهر 61,518 دينار بينما استهلاكي الشهري المعتاد لا يتجاوز 30,000 دينار. أرجو مراجعة القراءات.',
+      'type': 'مبلغ مبالغ فيه',
+      'priority': 'عالية',
+      'status': 'جديد',
+      'date': DateTime.now().subtract(Duration(hours: 5)),
+      'address': 'حي الرياض - شارع الملك فهد',
+      'phone': '077235477514',
+      'meterNumber': 'WMTR-001234',
+      'previousReading': 1250,
+      'currentReading': 1275,
+      'consumption': '25 م³',
+      'attachments': ['صورة_العداد.jpg'],
+      'assignedTo': null,
+    },
+    {
+      'id': 'WCMP-BILL-2024-002',
+      'citizenName': 'فاطمة علي',
+      'citizenId': 'SUB-2024-002',
+      'billId': 'WINV-2024-002',
+      'billAmount': 88945,
+      'title': 'فاتورة غير صحيحة',
+      'description': 'الفاتورة تتضمن قراءات غير صحيحة، حيث أن العداد كان معطلاً خلال هذه الفترة',
+      'type': 'قراءة خاطئة',
+      'priority': 'عالية جداً',
+      'status': 'قيد المراجعة',
+      'date': DateTime.now().subtract(Duration(days: 2)),
+      'address': 'حي النخيل - شارع الأمير محمد',
+      'phone': '07827534903',
+      'meterNumber': 'WMTR-001235',
+      'previousReading': 2100,
+      'currentReading': 2132,
+      'consumption': '32 م³',
+      'attachments': ['تقرير_الصيانة.pdf', 'صورة_العداد.jpg'],
+      'assignedTo': 'محمد العبيدي',
+    },
+    {
+      'id': 'WCMP-BILL-2024-003',
+      'citizenName': 'خالد إبراهيم',
+      'citizenId': 'SUB-2024-003',
+      'billId': 'WINV-2024-003',
+      'billAmount': 120473,
+      'title': 'تأخر صدور الفاتورة',
+      'description': 'فاتورة هذا الشهر صدرت متأخرة مما تسبب في تراكم المبالغ وغرامات التأخير',
+      'type': 'تأخر الفاتورة',
+      'priority': 'متوسطة',
+      'status': 'جديد',
+      'date': DateTime.now().subtract(Duration(hours: 12)),
+      'address': 'حي العليا - شارع العروبة',
+      'phone': '07758888999',
+      'meterNumber': 'WMTR-001236',
+      'previousReading': 3200,
+      'currentReading': 3228,
+      'consumption': '28 م³',
+      'attachments': [],
+      'assignedTo': null,
+    },
+    {
+      'id': 'WCMP-BILL-2024-004',
+      'citizenName': 'سارة عبدالله',
+      'citizenId': 'SUB-2024-004',
+      'billId': 'WINV-2024-004',
+      'billAmount': 66795,
+      'title': 'فاتورة مكررة',
+      'description': 'استلمت فاتورتين لنفس الشهر بنفس الرقم والمبلغ، أرجو توضيح الأمر',
+      'type': 'فاتورة مكررة',
+      'priority': 'عالية',
+      'status': 'جديد',
+      'date': DateTime.now().subtract(Duration(minutes: 30)),
+      'address': 'حي الزهور - شارع 14',
+      'phone': '07712345678',
+      'meterNumber': 'WMTR-001237',
+      'previousReading': 1301,
+      'currentReading': 1327,
+      'consumption': '26 م³',
+      'attachments': ['الفاتورة_المكررة.pdf'],
+      'assignedTo': null,
+    },
+    {
+      'id': 'WCMP-BILL-2024-005',
+      'citizenName': 'علي كريم',
+      'citizenId': 'SUB-2024-005',
+      'billId': 'WINV-2024-005',
+      'billAmount': 85000,
+      'title': 'استفسار عن طريقة الحساب',
+      'description': 'كيف تم حساب قيمة الفاتورة هذا الشهر؟ أريد توضيحاً لبنود الفاتورة',
+      'type': 'استفسار عن الحساب',
+      'priority': 'منخفضة',
+      'status': 'مغلقة',
+      'date': DateTime.now().subtract(Duration(days: 5)),
+      'address': 'حي المنصور - شارع 42',
+      'phone': '07987654321',
+      'meterNumber': 'WMTR-001238',
+      'previousReading': 1500,
+      'currentReading': 1525,
+      'consumption': '25 م³',
+      'attachments': [],
+      'assignedTo': 'أحمد الجبوري',
+      'resolution': 'تم شرح طريقة الحساب عبر الهاتف وإرسال تفاصيل الفاتورة عبر الواتساب',
+      'resolvedDate': DateTime.now().subtract(Duration(days: 4)),
+    },
+  ];
 
+  // دوال التحديث عند السحب
+  Future<void> _refreshSubscribers() async {
+    setState(() {
+      _isRefreshingSubscribers = true;
+    });
+    
+    // محاكاة جلب بيانات جديدة من API
+    await Future.delayed(Duration(seconds: 2));
+    
+    setState(() {
+      // تحديث البيانات بشكل عشوائي لمحاكاة التحديث
+      subscribers = List.from(subscribers)..shuffle();
+      _isRefreshingSubscribers = false;
+    });
+    
+    _showSuccessSnackbar('تم تحديث بيانات المشتركين');
+  }
+
+  Future<void> _refreshWaterBills() async {
+    setState(() {
+      _isRefreshingWaterBills = true;
+    });
+    
+    // محاكاة جلب بيانات جديدة من API
+    await Future.delayed(Duration(seconds: 2));
+    
+    setState(() {
+      // تحديث البيانات بشكل عشوائي لمحاكاة التحديث
+      waterBills = List.from(waterBills)..shuffle();
+      _isRefreshingWaterBills = false;
+    });
+    
+    _showSuccessSnackbar('تم تحديث بيانات فواتير المياه');
+  }
+
+  Future<void> _refreshReports() async {
+    setState(() {
+      _isRefreshingReports = true;
+    });
+    
+    // محاكاة جلب بيانات جديدة من API
+    await Future.delayed(Duration(seconds: 2));
+    
+    setState(() {
+      _isRefreshingReports = false;
+    });
+    
+    _showSuccessSnackbar('تم تحديث بيانات التقارير');
+  }
+
+  Future<void> _refreshPaymentMethods() async {
+    setState(() {
+      _isRefreshingPaymentMethods = true;
+    });
+    
+    // محاكاة جلب بيانات جديدة من API
+    await Future.delayed(Duration(seconds: 2));
+    
+    setState(() {
+      paymentTransfers = List.from(paymentTransfers)..shuffle();
+      _isRefreshingPaymentMethods = false;
+    });
+    
+    _showSuccessSnackbar('تم تحديث بيانات طرق الدفع');
+  }
+
+  Future<void> _refreshComplaints() async {
+    setState(() {
+      _isRefreshingComplaints = true;
+    });
+    
+    // محاكاة جلب بيانات جديدة من API
+    await Future.delayed(Duration(seconds: 2));
+    
+    setState(() {
+      complaintBills = List.from(complaintBills)..shuffle();
+      _isRefreshingComplaints = false;
+    });
+    
+    _showSuccessSnackbar('تم تحديث بيانات البلاغات');
+  }
+
+  // دوال مساعدة للبلاغات
+  IconData _getComplaintTypeIcon(String type) {
+    switch (type) {
+      case 'مبلغ مبالغ فيه':
+        return Icons.money_off_rounded;
+      case 'قراءة خاطئة':
+        return Icons.numbers_rounded;
+      case 'تأخر الفاتورة':
+        return Icons.schedule_rounded;
+      case 'فاتورة مكررة':
+        return Icons.copy_rounded;
+      case 'زيادة غير مبررة':
+        return Icons.trending_up_rounded;
+      case 'استفسار عن الحساب':
+        return Icons.help_rounded;
+      default:
+        return Icons.receipt_long_rounded;
+    }
+  }
+
+  Color _getComplaintTypeColor(String type) {
+    switch (type) {
+      case 'مبلغ مبالغ فيه':
+        return Colors.red;
+      case 'قراءة خاطئة':
+        return Colors.orange;
+      case 'تأخر الفاتورة':
+        return Colors.amber;
+      case 'فاتورة مكررة':
+        return Colors.purple;
+      case 'زيادة غير مبررة':
+        return Colors.deepOrange;
+      case 'استفسار عن الحساب':
+        return Colors.blue;
+      default:
+        return _accentColor;
+    }
+  }
+
+  Color _getComplaintPriorityColor(String priority) {
+    switch (priority) {
+      case 'عالية جداً':
+      case 'طوارئ':
+        return _errorColor;
+      case 'عالية':
+        return Colors.orange;
+      case 'متوسطة':
+        return _warningColor;
+      case 'منخفضة':
+        return _successColor;
+      default:
+        return _accentColor;
+    }
+  }
+
+  Color _getComplaintStatusColor(String status) {
+    switch (status) {
+      case 'جديد':
+        return _errorColor;
+      case 'قيد المراجعة':
+        return _warningColor;
+      case 'مغلقة':
+        return _successColor;
+      default:
+        return _accentColor;
+    }
+  }
+  
   // دالة للبحث في المشتركين
   List<Map<String, dynamic>> get filteredSubscribers {
     if (_searchQuery.isEmpty) {
@@ -573,6 +842,695 @@ class WaterBillingAccountantScreenState extends State<WaterBillingAccountantScre
     });
   }
 
+  Widget _buildComplaintsView(bool isDarkMode, double screenWidth, double screenHeight) {
+    return RefreshIndicator(
+      onRefresh: _refreshComplaints,
+      color: _primaryColor,
+      backgroundColor: _cardColor(context),
+      child: Container(
+        width: screenWidth,
+        height: screenHeight,
+        child: _isRefreshingComplaints
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: _primaryColor,
+                ),
+              )
+            : Column(
+                children: [
+                  // إحصائيات سريعة للبلاغات
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _cardColor(context),
+                      border: Border(bottom: BorderSide(color: _borderColor(context))),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildComplaintStat(
+                          'إجمالي البلاغات',
+                          complaintBills.length.toString(),
+                          Icons.report_problem_rounded,
+                          _primaryColor,
+                        ),
+                        _buildComplaintStat(
+                          'جديد',
+                          complaintBills.where((c) => c['status'] == 'جديد').length.toString(),
+                          Icons.fiber_new_rounded,
+                          _errorColor,
+                        ),
+                        _buildComplaintStat(
+                          'قيد المراجعة',
+                          complaintBills.where((c) => c['status'] == 'قيد المراجعة').length.toString(),
+                          Icons.pending_rounded,
+                          _warningColor,
+                        ),
+                        _buildComplaintStat(
+                          'مغلقة',
+                          complaintBills.where((c) => c['status'] == 'مغلقة').length.toString(),
+                          Icons.check_circle_rounded,
+                          _successColor,
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // قائمة البلاغات
+                  Expanded(
+                    child: complaintBills.isEmpty
+                        ? _buildNoComplaintsMessage(isDarkMode)
+                        : ListView.builder(
+                            padding: EdgeInsets.all(16),
+                            itemCount: complaintBills.length,
+                            itemBuilder: (context, index) {
+                              return _buildComplaintBillCard(complaintBills[index], isDarkMode);
+                            },
+                          ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildComplaintStat(String title, String value, IconData icon, Color color) {
+    return GestureDetector(
+      onTap: () {
+        // يمكن إضافة منطق التصفية حسب الحالة هنا
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              color: _textSecondaryColor(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComplaintBillCard(Map<String, dynamic> complaint, bool isDarkMode) {
+    Color priorityColor = _getComplaintPriorityColor(complaint['priority']);
+    Color statusColor = _getComplaintStatusColor(complaint['status']);
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: _cardColor(context),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: _borderColor(context),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: () {
+          _showComplaintBillDetails(complaint, isDarkMode);
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // السطر العلوي: النوع والحالة
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: priorityColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: priorityColor.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      complaint['type'],
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: priorityColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: statusColor.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      complaint['status'],
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Spacer(),
+                  Text(
+                    DateFormat('yyyy-MM-dd').format(complaint['date']),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: _textSecondaryColor(context),
+                    ),
+                  ),
+                ],
+              ),
+              
+              SizedBox(height: 12),
+              
+              // اسم المواطن ورقم الفاتورة
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      complaint['citizenName'],
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: _textColor(context),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'فاتورة: ${complaint['billId']}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: _primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              SizedBox(height: 8),
+              
+              // عنوان البلاغ
+              Text(
+                complaint['title'],
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: _textColor(context),
+                ),
+              ),
+              
+              SizedBox(height: 4),
+              
+              // وصف مختصر
+              Text(
+                complaint['description'],
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _textSecondaryColor(context),
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              SizedBox(height: 12),
+              
+              // معلومات الفاتورة
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _backgroundColor(context),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _borderColor(context)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'المبلغ:',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: _textSecondaryColor(context),
+                            ),
+                          ),
+                          Text(
+                            _formatCurrency(complaint['billAmount']),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _errorColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'الاستهلاك:',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: _textSecondaryColor(context),
+                            ),
+                          ),
+                          Text(
+                            complaint['consumption'],
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _textColor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'رقم العداد:',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: _textSecondaryColor(context),
+                            ),
+                          ),
+                          Text(
+                            complaint['meterNumber'],
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _textColor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              if (complaint['priority'] == 'عالية جداً' || complaint['priority'] == 'عالية') ...[
+                SizedBox(height: 8),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _errorColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: _errorColor, size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        'بلاغ عالي الأولوية - يحتاج متابعة فورية',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: _errorColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoComplaintsMessage(bool isDarkMode) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.report_problem_outlined, 
+               size: 64, 
+               color: _textSecondaryColor(context)),
+          SizedBox(height: 16),
+          Text(
+            'لا توجد بلاغات',
+            style: TextStyle(
+              fontSize: 18,
+              color: _textSecondaryColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'لم يتم استلام أي بلاغات جديدة',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _textSecondaryColor(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showComplaintBillDetails(Map<String, dynamic> complaint, bool isDarkMode) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.all(16),
+        child: Container(
+          width: double.infinity,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
+          decoration: BoxDecoration(
+            color: _cardColor(context),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              // رأس النافذة
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _primaryColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'تفاصيل بلاغ الفاتورة',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        complaint['id'],
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // محتوى النافذة
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // حالة وأولوية البلاغ
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildComplaintDetailChip(
+                              'الحالة: ${complaint['status']}',
+                              _getComplaintStatusColor(complaint['status']),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildComplaintDetailChip(
+                              'الأولوية: ${complaint['priority']}',
+                              _getComplaintPriorityColor(complaint['priority']),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      
+                      // معلومات الفاتورة
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: _primaryColor.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _primaryColor.withOpacity(0.3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'معلومات الفاتورة',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: _primaryColor,
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            _buildComplaintDetailRow('رقم الفاتورة:', complaint['billId']),
+                            _buildComplaintDetailRow('المبلغ:', _formatCurrency(complaint['billAmount'])),
+                            _buildComplaintDetailRow('رقم العداد:', complaint['meterNumber']),
+                            _buildComplaintDetailRow('الاستهلاك:', complaint['consumption']),
+                            _buildComplaintDetailRow('القراءة السابقة:', complaint['previousReading'].toString()),
+                            _buildComplaintDetailRow('القراءة الحالية:', complaint['currentReading'].toString()),
+                          ],
+                        ),
+                      ),
+                      
+                      SizedBox(height: 16),
+                      
+                      // تفاصيل البلاغ
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: _backgroundColor(context),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _borderColor(context)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'تفاصيل البلاغ',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: _textColor(context),
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            _buildComplaintDetailRow('نوع البلاغ:', complaint['type']),
+                            _buildComplaintDetailRow('العنوان:', complaint['title']),
+                            SizedBox(height: 8),
+                            Text(
+                              'الوصف:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: _textSecondaryColor(context),
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              complaint['description'],
+                              style: TextStyle(
+                                color: _textColor(context),
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      SizedBox(height: 16),
+                      
+                      // معلومات المواطن
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: _backgroundColor(context),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _borderColor(context)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'معلومات المواطن',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: _textColor(context),
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            _buildComplaintDetailRow('الاسم:', complaint['citizenName']),
+                            _buildComplaintDetailRow('رقم الهاتف:', complaint['phone']),
+                            _buildComplaintDetailRow('العنوان:', complaint['address']),
+                          ],
+                        ),
+                      ),
+                      
+                      // معلومات الحل (إذا كان مغلق)
+                      if (complaint['resolution'] != null) ...[
+                        SizedBox(height: 16),
+                        Container(
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: _successColor.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _successColor.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.check_circle_rounded, color: _successColor, size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'تم حل البلاغ',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: _successColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12),
+                              Text(
+                                complaint['resolution'],
+                                style: TextStyle(
+                                  color: _textColor(context),
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              _buildComplaintDetailRow('تم الحل بواسطة:', complaint['assignedTo']),
+                              _buildComplaintDetailRow('تاريخ الحل:', DateFormat('yyyy-MM-dd').format(complaint['resolvedDate'])),
+                            ],
+                          ),
+                        ),
+                      ],
+                      
+                      SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComplaintDetailChip(String text, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Center(
+        child: Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComplaintDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: _textSecondaryColor(context),
+                fontSize: 12,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: _textColor(context),
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
   // دالة للحصول على الحسابات البنكية المرتبطة بطريقة دفع معينة
   List<Map<String, dynamic>> _getBankAccountsForPaymentMethod(String paymentMethodId) {
     return bankAccounts.where((account) => 
@@ -583,7 +1541,7 @@ class WaterBillingAccountantScreenState extends State<WaterBillingAccountantScre
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() {
       setState(() {});
     });
@@ -598,134 +1556,138 @@ class WaterBillingAccountantScreenState extends State<WaterBillingAccountantScre
   }
 
   @override
-Widget build(BuildContext context) {
-  final themeProvider = Provider.of<ThemeProvider>(context);
-  final isDarkMode = themeProvider.isDarkMode;
-  
-  return Scaffold(
-    appBar: AppBar(
-      title: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: _secondaryColor, width: 2),
-            ),
-            child: Icon(Icons.water_drop_rounded, color: _primaryColor, size: 20),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'وزارة الموارد المائية - نظام فواتير المياه',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
                 color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: _secondaryColor, width: 2),
               ),
-              overflow: TextOverflow.ellipsis,
+              child: Icon(Icons.water_drop_rounded, color: _primaryColor, size: 20),
             ),
-          ),
-        ],
-      ),
-      backgroundColor: isDarkMode ? _darkPrimaryColor : _primaryColor,
-      elevation: 0,
-      centerTitle: false,
-      iconTheme: IconThemeData(color: Colors.white),
-      actions: [
-        IconButton(
-          icon: Stack(
-            children: [
-              Icon(Icons.notifications_outlined, color: Colors.white, size: 26),
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  padding: EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: _secondaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: BoxConstraints(minWidth: 16, minHeight: 16),
-                  child: Text(
-                    '2',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'وزارة الموارد المائية - نظام فواتير المياه',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: Colors.white,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => NotificationsScreen()),
-            );
-          },
+            ),
+          ],
         ),
-      ],
-      bottom: PreferredSize(
-        preferredSize: Size.fromHeight(60),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDarkMode ? _darkPrimaryColor : _primaryColor,
-            border: Border(
-              bottom: BorderSide(color: _secondaryColor, width: 2),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.only(left:0, right:0),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(width: 4, color: _secondaryColor),
-                ),
-              ),
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white.withOpacity(0.7),
-              labelStyle: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-              unselectedLabelStyle: TextStyle(
-                fontWeight: FontWeight.normal,
-                fontSize: 12,
-              ),
-              padding: EdgeInsets.zero,
-              labelPadding: EdgeInsets.symmetric(horizontal:5),
-              tabs: [
-                Tab(
-                  icon: Icon(Icons.people_alt_rounded, size: 22),
-                  text: 'المشتركين',
-                ),
-                Tab(
-                  icon: Icon(Icons.receipt_long_rounded, size: 22),
-                  text: 'فواتير المياه',
-                ),
-                Tab(
-                  icon: Icon(Icons.summarize_rounded, size: 22),
-                  text: 'التقارير',
-                ),
-                Tab(
-                  icon: Icon(Icons.payment_rounded, size: 22),
-                  text: 'طرق الدفع',
+        backgroundColor: isDarkMode ? _darkPrimaryColor : _primaryColor,
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: Stack(
+              children: [
+                Icon(Icons.notifications_outlined, color: Colors.white, size: 26),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    padding: EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: _secondaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      '2',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
               ],
             ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => NotificationsScreen()),
+              );
+            },
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(60),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDarkMode ? _darkPrimaryColor : _primaryColor,
+              border: Border(
+                bottom: BorderSide(color: _secondaryColor, width: 2),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.only(left:0, right:0),
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(width: 4, color: _secondaryColor),
+                  ),
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white.withOpacity(0.7),
+                labelStyle: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+                unselectedLabelStyle: TextStyle(
+                  fontWeight: FontWeight.normal,
+                  fontSize: 12,
+                ),
+                padding: EdgeInsets.zero,
+                labelPadding: EdgeInsets.symmetric(horizontal:5),
+                tabs: [
+                  Tab(
+                    icon: Icon(Icons.people_alt_rounded, size: 22),
+                    text: 'المشتركين',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.receipt_long_rounded, size: 22),
+                    text: 'فواتير المياه',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.summarize_rounded, size: 22),
+                    text: 'التقارير',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.payment_rounded, size: 22),
+                    text: 'طرق الدفع',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.report_problem_rounded, size: 22),
+                    text: 'البلاغات',
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
-    ),
       body: Container(
         width: double.infinity,
-       height: double.infinity,
+        height: double.infinity,
         decoration: BoxDecoration(
           gradient: isDarkMode 
               ? LinearGradient(
@@ -751,6 +1713,7 @@ Widget build(BuildContext context) {
                 _buildWaterBillsView(isDarkMode, screenWidth, screenHeight),
                 _buildReportsView(isDarkMode, screenWidth, screenHeight),
                 _buildPaymentMethodsView(isDarkMode, screenWidth, screenHeight),
+                _buildComplaintsView(isDarkMode, screenWidth, screenHeight),
               ],
             );
           },
@@ -761,35 +1724,47 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildSubscribersView(bool isDarkMode, double screenWidth, double screenHeight) {
-    return Container(
-      width: screenWidth,
-      height: screenHeight,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 16),
-            _buildSearchBar(isDarkMode, 'ابحث عن مشترك...'),
-            SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: Text(
-                'سجل المشتركين',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: isDarkMode ? _textColor(context) : _primaryColor,
+    return RefreshIndicator(
+      onRefresh: _refreshSubscribers,
+      color: _primaryColor,
+      backgroundColor: _cardColor(context),
+      child: Container(
+        width: screenWidth,
+        height: screenHeight,
+        child: _isRefreshingSubscribers
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: _primaryColor,
+                ),
+              )
+            : SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 16),
+                    _buildSearchBar(isDarkMode, 'ابحث عن مشترك...'),
+                    SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Text(
+                        'سجل المشتركين',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: isDarkMode ? _textColor(context) : _primaryColor,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    if (filteredSubscribers.isEmpty && _searchQuery.isNotEmpty)
+                      _buildNoResults(isDarkMode)
+                    else
+                      ...filteredSubscribers.map((subscriber) => _buildSubscriberCard(subscriber, isDarkMode)),
+                  ],
                 ),
               ),
-            ),
-            SizedBox(height: 12),
-            if (filteredSubscribers.isEmpty && _searchQuery.isNotEmpty)
-              _buildNoResults(isDarkMode)
-            else
-              ...filteredSubscribers.map((subscriber) => _buildSubscriberCard(subscriber, isDarkMode)),
-          ],
-        ),
       ),
     );
   }
@@ -797,747 +1772,785 @@ Widget build(BuildContext context) {
   Widget _buildWaterBillsView(bool isDarkMode, double screenWidth, double screenHeight) {
     List<Map<String, dynamic>> filteredBills = _getFilteredWaterBills();
 
-    return Container(
-      width: screenWidth,
-      height: screenHeight,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWaterBillsStatsCard(isDarkMode),
-            SizedBox(height: 20),
-            _buildWaterBillsFilterRow(isDarkMode),
-            SizedBox(height: 20),
-            Text(
-              'فواتير المياه الحالية',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: isDarkMode ? _textColor(context) : _primaryColor,
+    return RefreshIndicator(
+      onRefresh: _refreshWaterBills,
+      color: _primaryColor,
+      backgroundColor: _cardColor(context),
+      child: Container(
+        width: screenWidth,
+        height: screenHeight,
+        child: _isRefreshingWaterBills
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: _primaryColor,
+                ),
+              )
+            : SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildWaterBillsStatsCard(isDarkMode),
+                    SizedBox(height: 20),
+                    _buildWaterBillsFilterRow(isDarkMode),
+                    SizedBox(height: 20),
+                    Text(
+                      'فواتير المياه الحالية',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: isDarkMode ? _textColor(context) : _primaryColor,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    if (filteredBills.isEmpty)
+                      _buildNoWaterBillsMessage(isDarkMode)
+                    else
+                      ...filteredBills.map((bill) => _buildWaterBillCard(bill, isDarkMode)),
+                  ],
+                ),
               ),
+      ),
+    );
+  }
+
+  // شاشة التقارير مع خاصية التحديث
+  Widget _buildReportsView(bool isDarkMode, double screenWidth, double screenHeight) {
+    return RefreshIndicator(
+      onRefresh: _refreshReports,
+      color: _primaryColor,
+      backgroundColor: _cardColor(context),
+      child: SingleChildScrollView(
+        physics: AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: _isRefreshingReports
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: _primaryColor,
+                ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // العنوان الرئيسي
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: _primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.summarize_rounded, color: _primaryColor, size: 24),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'نظام التقارير المالية للمياه',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // تبويبات داخلية (إنشاء التقارير / التقارير الواردة)
+                  Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: _cardColor(context),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _borderColor(context)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildWaterReportInnerTabButton('إنشاء التقارير', 0, isDarkMode),
+                        ),
+                        Expanded(
+                          child: _buildWaterReportInnerTabButton('التقارير الواردة', 1, isDarkMode),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // عرض المحتوى حسب التبويب المختار
+                  _currentReportTab == 0 
+                      ? _buildWaterCreateReportSection(isDarkMode)
+                      : _buildWaterReceivedReportsSection(isDarkMode),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildWaterReportInnerTabButton(String title, int tabIndex, bool isDarkMode) {
+    bool isSelected = _currentReportTab == tabIndex;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentReportTab = tabIndex;
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? _primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? _primaryColor : Colors.transparent,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.white : _textColor(context),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
-            SizedBox(height: 16),
-            if (filteredBills.isEmpty)
-              _buildNoWaterBillsMessage(isDarkMode)
-            else
-              ...filteredBills.map((bill) => _buildWaterBillCard(bill, isDarkMode)),
-          ],
+          ),
         ),
       ),
     );
   }
-  // ⬅️ تعديل شاشة التقارير في محاسب المياه لتصبح مثل محاسب الكهرباء
-Widget _buildReportsView(bool isDarkMode, double screenWidth, double screenHeight) {
-  return SingleChildScrollView(
-    padding: const EdgeInsets.all(16),
-    child: Column(
+
+  // قسم إنشاء التقارير للمياه
+  Widget _buildWaterCreateReportSection(bool isDarkMode) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // العنوان الرئيسي
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: _primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.summarize_rounded, color: _primaryColor, size: 24),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'نظام التقارير المالية للمياه',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: _primaryColor,
-              ),
-            ),
-          ],
+        Text(
+          'إنشاء تقرير جديد للمياه',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: _textColor(context),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildReportTypeFilter(isDarkMode),
+        const SizedBox(height: 20),
+        _buildReportOptions(isDarkMode),
+        const SizedBox(height: 20),
+        _buildGenerateReportButton(isDarkMode),
+        const SizedBox(height: 20),
+        
+        // إضافة إحصائيات سريعة للمياه
+        _buildWaterQuickStats(isDarkMode),
+      ],
+    );
+  }
+
+  // قسم التقارير الواردة للمياه
+  Widget _buildWaterReceivedReportsSection(bool isDarkMode) {
+    // بيانات تجريبية للتقارير الواردة الخاصة بالمياه
+    final List<Map<String, dynamic>> waterReceivedReports = [
+      {
+        'id': 'WREP-2024-001',
+        'title': 'تقرير إيرادات المياه الشهري',
+        'sender': 'قسم محاسبة المياه',
+        'date': DateTime.now().subtract(Duration(days: 2)),
+        'type': 'شهري',
+        'size': '1.5 MB',
+        'status': 'مستلم',
+        'fileType': 'PDF',
+      },
+      {
+        'id': 'WREP-2024-002',
+        'title': 'تقرير فواتير المياه المتأخرة',
+        'sender': 'مكتب المدير العام للمياه',
+        'date': DateTime.now().subtract(Duration(days: 5)),
+        'type': 'أسبوعي',
+        'size': '920 KB',
+        'status': 'مستلم',
+        'fileType': 'PDF',
+      },
+      {
+        'id': 'WREP-2024-003',
+        'title': 'تقرير التحصيل اليومي للمياه',
+        'sender': 'فرع بغداد للمياه',
+        'date': DateTime.now().subtract(Duration(days: 1)),
+        'type': 'يومي',
+        'size': '520 KB',
+        'status': 'غير مقروء',
+        'fileType': 'Excel',
+      },
+      {
+        'id': 'WREP-2024-004',
+        'title': 'تقرير استهلاك المياه',
+        'sender': 'شؤون المشتركين',
+        'date': DateTime.now().subtract(Duration(days: 7)),
+        'type': 'شهري',
+        'size': '2.3 MB',
+        'status': 'مستلم',
+        'fileType': 'PDF',
+      },
+      {
+        'id': 'WREP-2024-005',
+        'title': 'تقرير إيرادات المياه السنوي',
+        'sender': 'الإدارة العليا للموارد المائية',
+        'date': DateTime.now().subtract(Duration(days: 10)),
+        'type': 'سنوي',
+        'size': '4.1 MB',
+        'status': 'مستلم',
+        'fileType': 'PDF',
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'التقارير المستلمة - المياه',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: _textColor(context),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'عرض وإدارة جميع التقارير التي تم استلامها في قسم المياه',
+          style: TextStyle(
+            color: _textSecondaryColor(context),
+          ),
         ),
         const SizedBox(height: 20),
         
-        // تبويبات داخلية (إنشاء التقارير / التقارير الواردة)
+        // إحصائيات سريعة للمياه
         Container(
-          height: 50,
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _cardColor(context),
+            color: _backgroundColor(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: _borderColor(context)),
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Expanded(
-                child: _buildWaterReportInnerTabButton('إنشاء التقارير', 0, isDarkMode),
+              Column(
+                children: [
+                  Text(
+                    waterReceivedReports.length.toString(),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: _primaryColor,
+                    ),
+                  ),
+                  Text(
+                    'إجمالي التقارير',
+                    style: TextStyle(
+                      color: _textSecondaryColor(context),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
-              Expanded(
-                child: _buildWaterReportInnerTabButton('التقارير الواردة', 1, isDarkMode),
+              Column(
+                children: [
+                  Text(
+                    waterReceivedReports.where((r) => r['status'] == 'غير مقروء').length.toString(),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: _warningColor,
+                    ),
+                  ),
+                  Text(
+                    'غير مقروء',
+                    style: TextStyle(
+                      color: _textSecondaryColor(context),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    '${_calculateWaterTotalSize(waterReceivedReports)} MB',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: _successColor,
+                    ),
+                  ),
+                  Text(
+                    'الحجم الإجمالي',
+                    style: TextStyle(
+                      color: _textSecondaryColor(context),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
+        
         const SizedBox(height: 20),
         
-        // عرض المحتوى حسب التبويب المختار
-        _currentReportTab == 0 
-            ? _buildWaterCreateReportSection(isDarkMode)
-            : _buildWaterReceivedReportsSection(isDarkMode),
+        // قائمة التقارير الخاصة بالمياه
+        ...waterReceivedReports.map((report) => _buildWaterReceivedReportCard(report, isDarkMode)),
       ],
-    ),
-  );
-}
+    );
+  }
 
-Widget _buildWaterReportInnerTabButton(String title, int tabIndex, bool isDarkMode) {
-  bool isSelected = _currentReportTab == tabIndex;
-  return GestureDetector(
-    onTap: () {
-      setState(() {
-        _currentReportTab = tabIndex;
-      });
-    },
-    child: Container(
+  // بناء بطاقة تقرير واردة للمياه
+  Widget _buildWaterReceivedReportCard(Map<String, dynamic> report, bool isDarkMode) {
+    bool isUnread = report['status'] == 'غير مقروء';
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isSelected ? _primaryColor : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? _primaryColor : Colors.transparent,
-        ),
+        color: _cardColor(context),
+        border: Border.all(color: _borderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      child: Center(
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.white : _textColor(context),
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
+      child: ListTile(
+        contentPadding: EdgeInsets.all(16),
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: _getWaterReportColor(report['fileType']).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            _getWaterReportIcon(report['fileType']),
+            color: _getWaterReportColor(report['fileType']),
           ),
         ),
-      ),
-    ),
-  );
-}
-
-// قسم إنشاء التقارير للمياه (نفس الوظيفة الحالية ولكن مع إضافة الإحصائيات)
-Widget _buildWaterCreateReportSection(bool isDarkMode) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'إنشاء تقرير جديد للمياه',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: _textColor(context),
-        ),
-      ),
-      const SizedBox(height: 16),
-      _buildReportTypeFilter(isDarkMode),
-      const SizedBox(height: 20),
-      _buildReportOptions(isDarkMode),
-      const SizedBox(height: 20),
-      _buildGenerateReportButton(isDarkMode),
-      const SizedBox(height: 20),
-      
-      // إضافة إحصائيات سريعة للمياه
-      _buildWaterQuickStats(isDarkMode),
-    ],
-  );
-}
-
-// قسم التقارير الواردة للمياه
-Widget _buildWaterReceivedReportsSection(bool isDarkMode) {
-  // بيانات تجريبية للتقارير الواردة الخاصة بالمياه
-  final List<Map<String, dynamic>> waterReceivedReports = [
-    {
-      'id': 'WREP-2024-001',
-      'title': 'تقرير إيرادات المياه الشهري',
-      'sender': 'قسم محاسبة المياه',
-      'date': DateTime.now().subtract(Duration(days: 2)),
-      'type': 'شهري',
-      'size': '1.5 MB',
-      'status': 'مستلم',
-      'fileType': 'PDF',
-    },
-    {
-      'id': 'WREP-2024-002',
-      'title': 'تقرير فواتير المياه المتأخرة',
-      'sender': 'مكتب المدير العام للمياه',
-      'date': DateTime.now().subtract(Duration(days: 5)),
-      'type': 'أسبوعي',
-      'size': '920 KB',
-      'status': 'مستلم',
-      'fileType': 'PDF',
-    },
-    {
-      'id': 'WREP-2024-003',
-      'title': 'تقرير التحصيل اليومي للمياه',
-      'sender': 'فرع بغداد للمياه',
-      'date': DateTime.now().subtract(Duration(days: 1)),
-      'type': 'يومي',
-      'size': '520 KB',
-      'status': 'غير مقروء',
-      'fileType': 'Excel',
-    },
-    {
-      'id': 'WREP-2024-004',
-      'title': 'تقرير استهلاك المياه',
-      'sender': 'شؤون المشتركين',
-      'date': DateTime.now().subtract(Duration(days: 7)),
-      'type': 'شهري',
-      'size': '2.3 MB',
-      'status': 'مستلم',
-      'fileType': 'PDF',
-    },
-    {
-      'id': 'WREP-2024-005',
-      'title': 'تقرير إيرادات المياه السنوي',
-      'sender': 'الإدارة العليا للموارد المائية',
-      'date': DateTime.now().subtract(Duration(days: 10)),
-      'type': 'سنوي',
-      'size': '4.1 MB',
-      'status': 'مستلم',
-      'fileType': 'PDF',
-    },
-  ];
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'التقارير المستلمة - المياه',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: _textColor(context),
-        ),
-      ),
-      const SizedBox(height: 8),
-      Text(
-        'عرض وإدارة جميع التقارير التي تم استلامها في قسم المياه',
-        style: TextStyle(
-          color: _textSecondaryColor(context),
-        ),
-      ),
-      const SizedBox(height: 20),
-      
-      // إحصائيات سريعة للمياه
-      Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _backgroundColor(context),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _borderColor(context)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+        title: Row(
           children: [
-            Column(
-              children: [
-                Text(
-                  waterReceivedReports.length.toString(),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: _primaryColor,
-                  ),
+            Expanded(
+              child: Text(
+                report['title'],
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: _textColor(context),
                 ),
-                Text(
-                  'إجمالي التقارير',
-                  style: TextStyle(
-                    color: _textSecondaryColor(context),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            Column(
-              children: [
-                Text(
-                  waterReceivedReports.where((r) => r['status'] == 'غير مقروء').length.toString(),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: _warningColor,
-                  ),
+            if (isUnread)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _warningColor,
+                  shape: BoxShape.circle,
                 ),
-                Text(
-                  'غير مقروء',
-                  style: TextStyle(
-                    color: _textSecondaryColor(context),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text(
-                  '${_calculateWaterTotalSize(waterReceivedReports)} MB',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: _successColor,
-                  ),
-                ),
-                Text(
-                  'الحجم الإجمالي',
-                  style: TextStyle(
-                    color: _textSecondaryColor(context),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
+              ),
           ],
         ),
-      ),
-      
-      const SizedBox(height: 20),
-      
-      // قائمة التقارير الخاصة بالمياه
-      ...waterReceivedReports.map((report) => _buildWaterReceivedReportCard(report, isDarkMode)),
-    ],
-  );
-}
-
-// بناء بطاقة تقرير واردة للمياه
-Widget _buildWaterReceivedReportCard(Map<String, dynamic> report, bool isDarkMode) {
-  bool isUnread = report['status'] == 'غير مقروء';
-  
-  return Container(
-    margin: EdgeInsets.only(bottom: 12),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      color: _cardColor(context),
-      border: Border.all(color: _borderColor(context)),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 8,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: ListTile(
-      contentPadding: EdgeInsets.all(16),
-      leading: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: _getWaterReportColor(report['fileType']).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          _getWaterReportIcon(report['fileType']),
-          color: _getWaterReportColor(report['fileType']),
-        ),
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              report['title'],
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: _textColor(context),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (isUnread)
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: _warningColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 4),
-          Text(
-            'من: ${report['sender']}',
-            style: TextStyle(
-              fontSize: 12,
-              color: _textSecondaryColor(context),
-            ),
-          ),
-          SizedBox(height: 2),
-          Text(
-            '${DateFormat('yyyy-MM-dd').format(report['date'])} • ${report['type']} • ${report['size']}',
-            style: TextStyle(
-              fontSize: 10,
-              color: _textSecondaryColor(context),
-            ),
-          ),
-        ],
-      ),
-      trailing: PopupMenuButton<String>(
-        icon: Icon(Icons.more_vert_rounded, color: _textSecondaryColor(context)),
-        onSelected: (value) {
-          _handleWaterReportAction(value, report);
-        },
-        itemBuilder: (BuildContext context) => [
-          PopupMenuItem<String>(
-            value: 'view',
-            child: Row(
-              children: [
-                Icon(Icons.visibility_rounded, size: 18, color: _primaryColor),
-                SizedBox(width: 8),
-                Text('عرض التقرير'),
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'download',
-            child: Row(
-              children: [
-                Icon(Icons.download_rounded, size: 18, color: _successColor),
-                SizedBox(width: 8),
-                Text('تحميل'),
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'share',
-            child: Row(
-              children: [
-                Icon(Icons.share_rounded, size: 18, color: _accentColor),
-                SizedBox(width: 8),
-                Text('مشاركة'),
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'delete',
-            child: Row(
-              children: [
-                Icon(Icons.delete_rounded, size: 18, color: _errorColor),
-                SizedBox(width: 8),
-                Text('حذف'),
-              ],
-            ),
-          ),
-        ],
-      ),
-      onTap: () {
-        _viewWaterReceivedReport(report);
-      },
-    ),
-  );
-}
-
-// إحصائيات سريعة للمياه
-Widget _buildWaterQuickStats(bool isDarkMode) {
-  return Container(
-    padding: EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: _backgroundColor(context),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: _borderColor(context)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'إحصائيات سريعة - المياه',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: _primaryColor,
-          ),
-        ),
-        SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildWaterQuickStatItem('تقارير هذا الشهر', '8', Icons.calendar_today_rounded, _primaryColor),
-            _buildWaterQuickStatItem('تقارير معلقة', '2', Icons.pending_rounded, _warningColor),
-            _buildWaterQuickStatItem('مقاسمة هذا الشهر', '5', Icons.share_rounded, _successColor),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildWaterQuickStatItem(String title, String value, IconData icon, Color color) {
-  return Column(
-    children: [
-      Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: color, size: 20),
-      ),
-      SizedBox(height: 8),
-      Text(
-        value,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-          color: color,
-        ),
-      ),
-      SizedBox(height: 4),
-      Text(
-        title,
-        style: TextStyle(
-          fontSize: 10,
-          color: _textSecondaryColor(context),
-        ),
-        textAlign: TextAlign.center,
-      ),
-    ],
-  );
-}
-
-// دوال مساعدة للتقارير الواردة للمياه
-Color _getWaterReportColor(String fileType) {
-  switch (fileType) {
-    case 'PDF':
-      return _errorColor;
-    case 'Excel':
-      return _successColor;
-    case 'Word':
-      return _primaryColor;
-    default:
-      return _accentColor;
-  }
-}
-
-IconData _getWaterReportIcon(String fileType) {
-  switch (fileType) {
-    case 'PDF':
-      return Icons.picture_as_pdf_rounded;
-    case 'Excel':
-      return Icons.table_chart_rounded;
-    case 'Word':
-      return Icons.description_rounded;
-    default:
-      return Icons.insert_drive_file_rounded;
-  }
-}
-
-String _calculateWaterTotalSize(List<Map<String, dynamic>> reports) {
-  double total = 0;
-  for (var report in reports) {
-    String sizeStr = report['size'];
-    if (sizeStr.contains('MB')) {
-      total += double.parse(sizeStr.replaceAll(' MB', ''));
-    } else if (sizeStr.contains('KB')) {
-      total += double.parse(sizeStr.replaceAll(' KB', '')) / 1024;
-    }
-  }
-  return total.toStringAsFixed(1);
-}
-
-void _handleWaterReportAction(String action, Map<String, dynamic> report) {
-  switch (action) {
-    case 'view':
-      _viewWaterReceivedReport(report);
-      break;
-    case 'download':
-      _downloadWaterReport(report);
-      break;
-    case 'share':
-      _shareWaterReport(report);
-      break;
-    case 'delete':
-      _deleteWaterReport(report);
-      break;
-  }
-}
-
-void _viewWaterReceivedReport(Map<String, dynamic> report) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: _cardColor(context),
-      title: Row(
-        children: [
-          Icon(_getWaterReportIcon(report['fileType']), color: _getWaterReportColor(report['fileType'])),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              report['title'],
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: _textColor(context),
-              ),
-            ),
-          ),
-        ],
-      ),
-      content: SingleChildScrollView(
-        child: Column(
+        subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildWaterReportDetailRow('المرسل:', report['sender']),
-            _buildWaterReportDetailRow('النوع:', report['type']),
-            _buildWaterReportDetailRow('الحجم:', report['size']),
-            _buildWaterReportDetailRow('صيغة الملف:', report['fileType']),
-            _buildWaterReportDetailRow('التاريخ:', DateFormat('yyyy-MM-dd HH:mm').format(report['date'])),
-            _buildWaterReportDetailRow('الحالة:', report['status']),
-            SizedBox(height: 16),
+            SizedBox(height: 4),
             Text(
-              'ملخص التقرير:',
+              'من: ${report['sender']}',
               style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: _primaryColor,
+                fontSize: 12,
+                color: _textSecondaryColor(context),
               ),
             ),
-            SizedBox(height: 8),
+            SizedBox(height: 2),
             Text(
-              'هذا التقرير يحتوي على البيانات المالية والشهرية الخاصة بفواتير المياه التي تم جمعها من مختلف الأقسام. يشمل إيرادات المياه، الفواتير المعلقة والمدفوعة، واستهلاك المياه.',
+              '${DateFormat('yyyy-MM-dd').format(report['date'])} • ${report['type']} • ${report['size']}',
               style: TextStyle(
+                fontSize: 10,
                 color: _textSecondaryColor(context),
               ),
             ),
           ],
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('إغلاق'),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _primaryColor,
-            foregroundColor: Colors.white,
-          ),
-          onPressed: () => _downloadWaterReport(report),
-          child: Text('تحميل'),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildWaterReportDetailRow(String label, String value) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: _textSecondaryColor(context),
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            style: TextStyle(
-              color: _textColor(context),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-void _downloadWaterReport(Map<String, dynamic> report) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('جاري تحميل: ${report['title']}'),
-      backgroundColor: _successColor,
-    ),
-  );
-}
-
-void _shareWaterReport(Map<String, dynamic> report) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('مشاركة: ${report['title']}'),
-      backgroundColor: _primaryColor,
-    ),
-  );
-}
-
-void _deleteWaterReport(Map<String, dynamic> report) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: _cardColor(context),
-      title: Row(
-        children: [
-          Icon(Icons.delete_rounded, color: _errorColor),
-          SizedBox(width: 8),
-          Text('حذف التقرير'),
-        ],
-      ),
-      content: Text(
-        'هل أنت متأكد من حذف تقرير "${report['title']}"؟',
-        style: TextStyle(
-          color: _textColor(context),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('إلغاء'),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _errorColor,
-            foregroundColor: Colors.white,
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('تم حذف التقرير: ${report['title']}'),
-                backgroundColor: _errorColor,
-              ),
-            );
+        trailing: PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert_rounded, color: _textSecondaryColor(context)),
+          onSelected: (value) {
+            _handleWaterReportAction(value, report);
           },
-          child: Text('حذف'),
-        ),
-      ],
-    ),
-  );
-}
-  Widget _buildPaymentMethodsView(bool isDarkMode, double screenWidth, double screenHeight) {
-    return Container(
-      width: screenWidth,
-      height: screenHeight,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildPaymentMethodsSummaryCard(isDarkMode),
-            SizedBox(height: 20),
-            Text(
-              'طرق الدفع المتاحة',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: isDarkMode ? _textColor(context) : _primaryColor,
-              ), 
+          itemBuilder: (BuildContext context) => [
+            PopupMenuItem<String>(
+              value: 'view',
+              child: Row(
+                children: [
+                  Icon(Icons.visibility_rounded, size: 18, color: _primaryColor),
+                  SizedBox(width: 8),
+                  Text('عرض التقرير'),
+                ],
+              ),
             ),
-            SizedBox(height: 16),
-            ...paymentMethods.map((method) => _buildPaymentMethodCard(method, isDarkMode)),
+            PopupMenuItem<String>(
+              value: 'download',
+              child: Row(
+                children: [
+                  Icon(Icons.download_rounded, size: 18, color: _successColor),
+                  SizedBox(width: 8),
+                  Text('تحميل'),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'share',
+              child: Row(
+                children: [
+                  Icon(Icons.share_rounded, size: 18, color: _accentColor),
+                  SizedBox(width: 8),
+                  Text('مشاركة'),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_rounded, size: 18, color: _errorColor),
+                  SizedBox(width: 8),
+                  Text('حذف'),
+                ],
+              ),
+            ),
           ],
         ),
+        onTap: () {
+          _viewWaterReceivedReport(report);
+        },
+      ),
+    );
+  }
+
+  // إحصائيات سريعة للمياه
+  Widget _buildWaterQuickStats(bool isDarkMode) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _backgroundColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _borderColor(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'إحصائيات سريعة - المياه',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: _primaryColor,
+            ),
+          ),
+          SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildWaterQuickStatItem('تقارير هذا الشهر', '8', Icons.calendar_today_rounded, _primaryColor),
+              _buildWaterQuickStatItem('تقارير معلقة', '2', Icons.pending_rounded, _warningColor),
+              _buildWaterQuickStatItem('مقاسمة هذا الشهر', '5', Icons.share_rounded, _successColor),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaterQuickStatItem(String title, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 10,
+            color: _textSecondaryColor(context),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  // دوال مساعدة للتقارير الواردة للمياه
+  Color _getWaterReportColor(String fileType) {
+    switch (fileType) {
+      case 'PDF':
+        return _errorColor;
+      case 'Excel':
+        return _successColor;
+      case 'Word':
+        return _primaryColor;
+      default:
+        return _accentColor;
+    }
+  }
+
+  IconData _getWaterReportIcon(String fileType) {
+    switch (fileType) {
+      case 'PDF':
+        return Icons.picture_as_pdf_rounded;
+      case 'Excel':
+        return Icons.table_chart_rounded;
+      case 'Word':
+        return Icons.description_rounded;
+      default:
+        return Icons.insert_drive_file_rounded;
+    }
+  }
+
+  String _calculateWaterTotalSize(List<Map<String, dynamic>> reports) {
+    double total = 0;
+    for (var report in reports) {
+      String sizeStr = report['size'];
+      if (sizeStr.contains('MB')) {
+        total += double.parse(sizeStr.replaceAll(' MB', ''));
+      } else if (sizeStr.contains('KB')) {
+        total += double.parse(sizeStr.replaceAll(' KB', '')) / 1024;
+      }
+    }
+    return total.toStringAsFixed(1);
+  }
+
+  void _handleWaterReportAction(String action, Map<String, dynamic> report) {
+    switch (action) {
+      case 'view':
+        _viewWaterReceivedReport(report);
+        break;
+      case 'download':
+        _downloadWaterReport(report);
+        break;
+      case 'share':
+        _shareWaterReport(report);
+        break;
+      case 'delete':
+        _deleteWaterReport(report);
+        break;
+    }
+  }
+
+  void _viewWaterReceivedReport(Map<String, dynamic> report) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _cardColor(context),
+        title: Row(
+          children: [
+            Icon(_getWaterReportIcon(report['fileType']), color: _getWaterReportColor(report['fileType'])),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                report['title'],
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: _textColor(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildWaterReportDetailRow('المرسل:', report['sender']),
+              _buildWaterReportDetailRow('النوع:', report['type']),
+              _buildWaterReportDetailRow('الحجم:', report['size']),
+              _buildWaterReportDetailRow('صيغة الملف:', report['fileType']),
+              _buildWaterReportDetailRow('التاريخ:', DateFormat('yyyy-MM-dd HH:mm').format(report['date'])),
+              _buildWaterReportDetailRow('الحالة:', report['status']),
+              SizedBox(height: 16),
+              Text(
+                'ملخص التقرير:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: _primaryColor,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'هذا التقرير يحتوي على البيانات المالية والشهرية الخاصة بفواتير المياه التي تم جمعها من مختلف الأقسام. يشمل إيرادات المياه، الفواتير المعلقة والمدفوعة، واستهلاك المياه.',
+                style: TextStyle(
+                  color: _textSecondaryColor(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('إغلاق'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => _downloadWaterReport(report),
+            child: Text('تحميل'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaterReportDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: _textSecondaryColor(context),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: _textColor(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _downloadWaterReport(Map<String, dynamic> report) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('جاري تحميل: ${report['title']}'),
+        backgroundColor: _successColor,
+      ),
+    );
+  }
+
+  void _shareWaterReport(Map<String, dynamic> report) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('مشاركة: ${report['title']}'),
+        backgroundColor: _primaryColor,
+      ),
+    );
+  }
+
+  void _deleteWaterReport(Map<String, dynamic> report) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _cardColor(context),
+        title: Row(
+          children: [
+            Icon(Icons.delete_rounded, color: _errorColor),
+            SizedBox(width: 8),
+            Text('حذف التقرير'),
+          ],
+        ),
+        content: Text(
+          'هل أنت متأكد من حذف تقرير "${report['title']}"؟',
+          style: TextStyle(
+            color: _textColor(context),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('إلغاء'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _errorColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('تم حذف التقرير: ${report['title']}'),
+                  backgroundColor: _errorColor,
+                ),
+              );
+            },
+            child: Text('حذف'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodsView(bool isDarkMode, double screenWidth, double screenHeight) {
+    return RefreshIndicator(
+      onRefresh: _refreshPaymentMethods,
+      color: _primaryColor,
+      backgroundColor: _cardColor(context),
+      child: Container(
+        width: screenWidth,
+        height: screenHeight,
+        child: _isRefreshingPaymentMethods
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: _primaryColor,
+                ),
+              )
+            : SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildPaymentMethodsSummaryCard(isDarkMode),
+                    SizedBox(height: 20),
+                    Text(
+                      'طرق الدفع المتاحة',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: isDarkMode ? _textColor(context) : _primaryColor,
+                      ), 
+                    ),
+                    SizedBox(height: 16),
+                    ...paymentMethods.map((method) => _buildPaymentMethodCard(method, isDarkMode)),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -2149,141 +3162,141 @@ void _deleteWaterReport(Map<String, dynamic> report) {
   }
 
   Widget _buildDailyOptions() {
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      ElevatedButton(
-        onPressed: _showMultiDatePicker,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _primaryColor,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 50),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.calendar_today),
-            SizedBox(width: 8),
-            Text('فتح التقويم واختيار التواريخ'),
-          ],
-        ),
-      ),
-      const SizedBox(height: 16),
-      
-      if (_selectedDates.isNotEmpty) ...[
-        Container(
-          padding: EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: _primaryColor.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _primaryColor.withOpacity(0.3)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle, color: _successColor),
-                  SizedBox(width: 8),
-                  Text(
-                    'تم اختيار ${_selectedDates.length} يوم',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: _primaryColor,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8),
-              Text(
-                'من ${DateFormat('yyyy-MM-dd').format(_selectedDates.reduce((a, b) => a.isBefore(b) ? a : b))} '
-                'إلى ${DateFormat('yyyy-MM-dd').format(_selectedDates.reduce((a, b) => a.isAfter(b) ? a : b))}',
-                style: TextStyle(
-                  color: _textSecondaryColor(context),
-                  fontSize: 12,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 16),
-        
-        Text(
-          'التواريخ المحددة:',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: _textColor(context),
-          ),
-        ),
-        SizedBox(height: 8),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: 120),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(8),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _selectedDates.map((date) {
-                return Chip(
-                  backgroundColor: _primaryColor,
-                  label: Text(
-                    DateFormat('yyyy-MM-dd').format(date),
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                  deleteIcon: Icon(Icons.close, color: Colors.white, size: 16),
-                  onDeleted: () {
-                    setState(() {
-                      _selectedDates.remove(date);
-                    });
-                  },
-                );
-              }).toList(),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ElevatedButton(
+          onPressed: _showMultiDatePicker,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _primaryColor,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
-        ),
-      ] else ...[
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _backgroundColor(context),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _borderColor(context)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.calendar_today_outlined, color: _textSecondaryColor(context), size: 48),
-              SizedBox(height: 12),
-              Text(
-                'لم يتم اختيار أي تواريخ',
-                style: TextStyle(
-                  color: _textSecondaryColor(context),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'انقر على الزر أعلاه لفتح التقويم\nواختيار التواريخ المطلوبة للتقرير',
-                style: TextStyle(
-                  color: _textSecondaryColor(context),
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              Icon(Icons.calendar_today),
+              SizedBox(width: 8),
+              Text('فتح التقويم واختيار التواريخ'),
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        
+        if (_selectedDates.isNotEmpty) ...[
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _primaryColor.withOpacity(0.3)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle, color: _successColor),
+                    SizedBox(width: 8),
+                    Text(
+                      'تم اختيار ${_selectedDates.length} يوم',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _primaryColor,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'من ${DateFormat('yyyy-MM-dd').format(_selectedDates.reduce((a, b) => a.isBefore(b) ? a : b))} '
+                  'إلى ${DateFormat('yyyy-MM-dd').format(_selectedDates.reduce((a, b) => a.isAfter(b) ? a : b))}',
+                  style: TextStyle(
+                    color: _textSecondaryColor(context),
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 16),
+          
+          Text(
+            'التواريخ المحددة:',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: _textColor(context),
+            ),
+          ),
+          SizedBox(height: 8),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: 120),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _selectedDates.map((date) {
+                  return Chip(
+                    backgroundColor: _primaryColor,
+                    label: Text(
+                      DateFormat('yyyy-MM-dd').format(date),
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    deleteIcon: Icon(Icons.close, color: Colors.white, size: 16),
+                    onDeleted: () {
+                      setState(() {
+                        _selectedDates.remove(date);
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ] else ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _backgroundColor(context),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _borderColor(context)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.calendar_today_outlined, color: _textSecondaryColor(context), size: 48),
+                SizedBox(height: 12),
+                Text(
+                  'لم يتم اختيار أي تواريخ',
+                  style: TextStyle(
+                    color: _textSecondaryColor(context),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'انقر على الزر أعلاه لفتح التقويم\nواختيار التواريخ المطلوبة للتقرير',
+                  style: TextStyle(
+                    color: _textSecondaryColor(context),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
-    ],
-  );
-}
+    );
+  }
 
   Widget _buildWeeklyOptions() {
     return Column(
@@ -2418,308 +3431,308 @@ void _deleteWaterReport(Map<String, dynamic> report) {
     );
   }
 
-   void _showMultiDatePicker() {
-  List<DateTime> tempSelectedDates = List.from(_selectedDates);
+  void _showMultiDatePicker() {
+    List<DateTime> tempSelectedDates = List.from(_selectedDates);
 
-  showDialog(
-    context: context,
-    builder: (context) {
-      DateTime focusedDay = DateTime.now();
-      
-      return Dialog(
-        backgroundColor: _cardColor(context),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-            maxWidth: MediaQuery.of(context).size.width * 0.9,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: _primaryColor,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.calendar_today, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text(
-                      'اختر التواريخ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
+    showDialog(
+      context: context,
+      builder: (context) {
+        DateTime focusedDay = DateTime.now();
+        
+        return Dialog(
+          backgroundColor: _cardColor(context),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+              maxWidth: MediaQuery.of(context).size.width * 0.9,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _primaryColor,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
                     ),
-                    Spacer(),
-                    if (tempSelectedDates.isNotEmpty)
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${tempSelectedDates.length} يوم',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_today, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text(
+                        'اختر التواريخ',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
                       ),
-                  ],
-                ),
-              ),
-              
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                      Spacer(),
+                      if (tempSelectedDates.isNotEmpty)
                         Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _borderColor(context)),
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          child: TableCalendar(
-                            firstDay: DateTime.utc(2020, 1, 1),
-                            lastDay: DateTime.utc(2030, 12, 31),
-                            focusedDay: focusedDay,
-                            
-                            selectedDayPredicate: (day) {
-                              return tempSelectedDates.any((selectedDate) {
-                                return isSameDay(selectedDate, day);
-                              });
-                            },
-                            
-                            onDaySelected: (selectedDay, focused) {
-                              focusedDay = focused;
-                              
-                              if (tempSelectedDates.any((date) => isSameDay(date, selectedDay))) {
-                                tempSelectedDates.removeWhere((date) => isSameDay(date, selectedDay));
-                              } else {
-                                tempSelectedDates.add(DateTime(selectedDay.year, selectedDay.month, selectedDay.day));
-                              }
-                              
-                              tempSelectedDates.sort((a, b) => a.compareTo(b));
-                              
-                              (context as Element).markNeedsBuild();
-                            },
-                            
-                            calendarStyle: CalendarStyle(
-                              defaultTextStyle: TextStyle(color: _textColor(context)),
-                              todayTextStyle: TextStyle(
-                                color: _textColor(context),
-                                fontWeight: FontWeight.bold,
-                              ),
-                              selectedTextStyle: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              todayDecoration: BoxDecoration(
-                                color: _accentColor.withOpacity(0.3),
-                                shape: BoxShape.circle,
-                              ),
-                              selectedDecoration: BoxDecoration(
-                                color: _primaryColor,
-                                shape: BoxShape.circle,
-                              ),
+                          child: Text(
+                            '${tempSelectedDates.length} يوم',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
                             ),
-                            
-                            headerStyle: HeaderStyle(
-                              formatButtonVisible: false,
-                              titleCentered: true,
-                              titleTextStyle: TextStyle(
-                                color: _primaryColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                              leftChevronIcon: Icon(Icons.chevron_left, color: _primaryColor),
-                              rightChevronIcon: Icon(Icons.chevron_right, color: _primaryColor),
-                              headerPadding: EdgeInsets.symmetric(vertical: 8),
-                              headerMargin: EdgeInsets.only(bottom: 8),
-                            ),
-                            
-                            daysOfWeekStyle: DaysOfWeekStyle(
-                              weekdayStyle: TextStyle(
-                                color: _textColor(context),
-                                fontWeight: FontWeight.w600,
-                              ),
-                              weekendStyle: TextStyle(
-                                color: _errorColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            
-                            daysOfWeekHeight: 30,
-                            weekendDays: [DateTime.friday, DateTime.saturday],
                           ),
                         ),
-                        
-                        SizedBox(height: 20),
-                        
-                        if (tempSelectedDates.isNotEmpty)
+                    ],
+                  ),
+                ),
+                
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           Container(
-                            padding: EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: _backgroundColor(context),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: _borderColor(context)),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.date_range_rounded, color: _primaryColor, size: 20),
-                                    SizedBox(width: 8),
+                            child: TableCalendar(
+                              firstDay: DateTime.utc(2020, 1, 1),
+                              lastDay: DateTime.utc(2030, 12, 31),
+                              focusedDay: focusedDay,
+                              
+                              selectedDayPredicate: (day) {
+                                return tempSelectedDates.any((selectedDate) {
+                                  return isSameDay(selectedDate, day);
+                                });
+                              },
+                              
+                              onDaySelected: (selectedDay, focused) {
+                                focusedDay = focused;
+                                
+                                if (tempSelectedDates.any((date) => isSameDay(date, selectedDay))) {
+                                  tempSelectedDates.removeWhere((date) => isSameDay(date, selectedDay));
+                                } else {
+                                  tempSelectedDates.add(DateTime(selectedDay.year, selectedDay.month, selectedDay.day));
+                                }
+                                
+                                tempSelectedDates.sort((a, b) => a.compareTo(b));
+                                
+                                (context as Element).markNeedsBuild();
+                              },
+                              
+                              calendarStyle: CalendarStyle(
+                                defaultTextStyle: TextStyle(color: _textColor(context)),
+                                todayTextStyle: TextStyle(
+                                  color: _textColor(context),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                selectedTextStyle: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                todayDecoration: BoxDecoration(
+                                  color: _accentColor.withOpacity(0.3),
+                                  shape: BoxShape.circle,
+                                ),
+                                selectedDecoration: BoxDecoration(
+                                  color: _primaryColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              
+                              headerStyle: HeaderStyle(
+                                formatButtonVisible: false,
+                                titleCentered: true,
+                                titleTextStyle: TextStyle(
+                                  color: _primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                leftChevronIcon: Icon(Icons.chevron_left, color: _primaryColor),
+                                rightChevronIcon: Icon(Icons.chevron_right, color: _primaryColor),
+                                headerPadding: EdgeInsets.symmetric(vertical: 8),
+                                headerMargin: EdgeInsets.only(bottom: 8),
+                              ),
+                              
+                              daysOfWeekStyle: DaysOfWeekStyle(
+                                weekdayStyle: TextStyle(
+                                  color: _textColor(context),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                weekendStyle: TextStyle(
+                                  color: _errorColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              
+                              daysOfWeekHeight: 30,
+                              weekendDays: [DateTime.friday, DateTime.saturday],
+                            ),
+                          ),
+                          
+                          SizedBox(height: 20),
+                          
+                          if (tempSelectedDates.isNotEmpty)
+                            Container(
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: _backgroundColor(context),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: _borderColor(context)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.date_range_rounded, color: _primaryColor, size: 20),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'التواريخ المختارة',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: _primaryColor,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: tempSelectedDates.map((date) {
+                                      return Chip(
+                                        backgroundColor: _primaryColor,
+                                        label: Text(
+                                          DateFormat('yyyy-MM-dd').format(date),
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        deleteIcon: Icon(Icons.close, color: Colors.white, size: 16),
+                                        onDeleted: () {
+                                          tempSelectedDates.remove(date);
+                                          (context as Element).markNeedsBuild();
+                                        },
+                                      );
+                                    }).toList(),
+                                  ),
+                                  
+                                  SizedBox(height: 12),
+                                  
+                                  if (tempSelectedDates.length > 1)
                                     Text(
-                                      'التواريخ المختارة',
+                                      'من ${DateFormat('yyyy-MM-dd').format(tempSelectedDates.first)} '
+                                      'إلى ${DateFormat('yyyy-MM-dd').format(tempSelectedDates.last)} '
+                                      '(${tempSelectedDates.length} يوم)',
                                       style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: _primaryColor,
-                                        fontSize: 16,
+                                        fontSize: 12,
+                                        color: _textSecondaryColor(context),
                                       ),
                                     ),
-                                  ],
-                                ),
-                                SizedBox(height: 12),
-                                
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: tempSelectedDates.map((date) {
-                                    return Chip(
-                                      backgroundColor: _primaryColor,
-                                      label: Text(
-                                        DateFormat('yyyy-MM-dd').format(date),
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                      deleteIcon: Icon(Icons.close, color: Colors.white, size: 16),
-                                      onDeleted: () {
-                                        tempSelectedDates.remove(date);
-                                        (context as Element).markNeedsBuild();
-                                      },
-                                    );
-                                  }).toList(),
-                                ),
-                                
-                                SizedBox(height: 12),
-                                
-                                if (tempSelectedDates.length > 1)
+                                ],
+                              ),
+                            ),
+                          
+                          if (tempSelectedDates.isEmpty)
+                            Container(
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: _backgroundColor(context),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: _borderColor(context)),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.touch_app_rounded, 
+                                       size: 40, 
+                                       color: _textSecondaryColor(context)),
+                                  SizedBox(height: 12),
                                   Text(
-                                    'من ${DateFormat('yyyy-MM-dd').format(tempSelectedDates.first)} '
-                                    'إلى ${DateFormat('yyyy-MM-dd').format(tempSelectedDates.last)} '
-                                    '(${tempSelectedDates.length} يوم)',
+                                    'انقر على الأيام في التقويم',
                                     style: TextStyle(
-                                      fontSize: 12,
-                                      color: _textSecondaryColor(context),
+                                      color: _textColor(context),
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                              ],
-                            ),
-                          ),
-                        
-                        if (tempSelectedDates.isEmpty)
-                          Container(
-                            padding: EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: _backgroundColor(context),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: _borderColor(context)),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(Icons.touch_app_rounded, 
-                                     size: 40, 
-                                     color: _textSecondaryColor(context)),
-                                SizedBox(height: 12),
-                                Text(
-                                  'انقر على الأيام في التقويم',
-                                  style: TextStyle(
-                                    color: _textColor(context),
-                                    fontWeight: FontWeight.w600,
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'اختر الأيام المطلوبة للتقرير',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: _textSecondaryColor(context),
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'اختر الأيام المطلوبة للتقرير',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: _textSecondaryColor(context),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: _borderColor(context))),
-                  color: _cardColor(context),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: _errorColor,
-                          side: BorderSide(color: _errorColor),
-                          padding: EdgeInsets.symmetric(vertical: 12),
+                
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: _borderColor(context))),
+                    color: _cardColor(context),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _errorColor,
+                            side: BorderSide(color: _errorColor),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text('إلغاء'),
                         ),
-                        child: Text('إلغاء'),
                       ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 12),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _selectedDates = List.from(tempSelectedDates);
+                            });
+                            Navigator.pop(context);
+                            _showSuccessSnackbar('تم اختيار ${_selectedDates.length} يوم');
+                          },
+                          child: Text('تم الاختيار'),
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _selectedDates = List.from(tempSelectedDates);
-                          });
-                          Navigator.pop(context);
-                          _showSuccessSnackbar('تم اختيار ${_selectedDates.length} يوم');
-                        },
-                        child: Text('تم الاختيار'),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
-bool isSameDay(DateTime? a, DateTime? b) {
-  if (a == null || b == null) return false;
-  return a.year == b.year && a.month == b.month && a.day == b.day;
-}
+  bool isSameDay(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
 
   Widget _buildMonthCalendar(DateTime month, List<DateTime> tempSelectedDates, StateSetter setStateDialog) {
     return Container(
@@ -3377,760 +4390,747 @@ bool isSameDay(DateTime? a, DateTime? b) {
   }
 
   // بناء القائمة المنسدلة
-Widget _buildWaterMinistryDrawer(BuildContext context, bool isDarkMode) {
-  return Drawer(
-    child: Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDarkMode 
-              ? [_darkPrimaryColor, Color(0xFF0D1B2A)]
-              : [_primaryColor, Color(0xFF29B6F6)],
+  Widget _buildWaterMinistryDrawer(BuildContext context, bool isDarkMode) {
+    return Drawer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDarkMode 
+                ? [_darkPrimaryColor, Color(0xFF0D1B2A)]
+                : [_primaryColor, Color(0xFF29B6F6)],
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDarkMode 
-                    ? [_darkPrimaryColor, Color(0xFF1565C0)]
-                    : [_primaryColor, Color(0xFF0288D1)],
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: isDarkMode 
+                      ? [_darkPrimaryColor, Color(0xFF1565C0)]
+                      : [_primaryColor, Color(0xFF0288D1)],
+                ),
               ),
-            ),
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.white.withOpacity(0.2),
-                  child: Icon(
-                    Icons.water_drop_rounded,
-                    color: Colors.white,
-                    size: 40,
-                  ),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  "محاسب فواتير المياه",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "محاسب - قسم محاسبة المياه",
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 8),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "المنطقة الوسطى",
-                    style: TextStyle(
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: Icon(
+                      Icons.water_drop_rounded,
                       color: Colors.white,
-                      fontSize: 14,
+                      size: 40,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: Container(
-              color: isDarkMode ? Color(0xFF0D1B2A) : Color(0xFFE3F2FD),
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  SizedBox(height: 20),
-                  _buildWaterDrawerMenuItem(
-                    icon: Icons.settings_rounded,
-                    title: 'الإعدادات',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showSettingsScreen(context, isDarkMode);
-                    },
-                    isDarkMode: isDarkMode,
+                  SizedBox(height: 16),
+                  Text(
+                    "محاسب فواتير المياه",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  
-                  _buildWaterDrawerMenuItem(
-                    icon: Icons.help_rounded,
-                    title: 'المساعدة والدعم',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showHelpSupportScreen(context, isDarkMode);
-                    },
-                    isDarkMode: isDarkMode,
+                  SizedBox(height: 4),
+                  Text(
+                    "محاسب - قسم محاسبة المياه",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-
-                  SizedBox(height: 30),
-                  
-                  _buildWaterDrawerMenuItem(
-                    icon: Icons.logout_rounded,
-                    title: 'تسجيل الخروج',
-                    onTap: () {
-                      _showLogoutConfirmation(context, isDarkMode);
-                    },
-                    isDarkMode: isDarkMode,
-                    isLogout: true,
-                  ),
-
-                  SizedBox(height: 40),
-                  
+                  SizedBox(height: 8),
                   Container(
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Divider(
-                          color: isDarkMode ? Colors.white24 : Colors.grey[400],
-                          height: 1,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'وزارة الموارد المائية - نظام فواتير المياه',
-                          style: TextStyle(
-                            color: isDarkMode ? Colors.white70 : Colors.grey[700],
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'الإصدار 1.0.0',
-                          style: TextStyle(
-                            color: isDarkMode ? Colors.white54 : Colors.grey[600],
-                            fontSize: 10,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "المنطقة الوسطى",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+
+            Expanded(
+              child: Container(
+                color: isDarkMode ? Color(0xFF0D1B2A) : Color(0xFFE3F2FD),
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    SizedBox(height: 20),
+                    _buildWaterDrawerMenuItem(
+                      icon: Icons.settings_rounded,
+                      title: 'الإعدادات',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showSettingsScreen(context, isDarkMode);
+                      },
+                      isDarkMode: isDarkMode,
+                    ),
+                    _buildWaterDrawerMenuItem(
+                      icon: Icons.logout_rounded,
+                      title: 'تسجيل الخروج',
+                      onTap: () {
+                        _showLogoutConfirmation(context, isDarkMode);
+                      },
+                      isDarkMode: isDarkMode,
+                      isLogout: true,
+                    ),
+
+                    SizedBox(height: 40),
+                    
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Divider(
+                            color: isDarkMode ? Colors.white24 : Colors.grey[400],
+                            height: 1,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'وزارة الموارد المائية - نظام فواتير المياه',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.white70 : Colors.grey[700],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'الإصدار 1.0.0',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.white54 : Colors.grey[600],
+                              fontSize: 10,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWaterDrawerMenuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    required bool isDarkMode,
+    bool isLogout = false,
+  }) {
+    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+    final Color iconColor = isLogout 
+        ? Colors.red 
+        : (isDarkMode ? Colors.white70 : Colors.grey[700]!);
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: isLogout ? Colors.red.withOpacity(0.1) : Colors.transparent,
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: isLogout 
+                ? Colors.red.withOpacity(0.2)
+                : (isDarkMode ? Colors.white12 : Colors.grey[100]),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: iconColor,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isLogout ? Colors.red : textColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        trailing: Icon(
+          Icons.arrow_left_rounded,
+          color: isLogout ? Colors.red : (isDarkMode ? Colors.white54 : Colors.grey[500]),
+          size: 24,
+        ),
+        onTap: onTap,
+        contentPadding: EdgeInsets.symmetric(horizontal: 8),
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context, bool isDarkMode) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _cardColor(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.logout_rounded, color: _errorColor),
+            SizedBox(width: 8),
+            Text('تأكيد تسجيل الخروج'),
+          ],
+        ),
+        content: Text(
+          'هل أنت متأكد من أنك تريد تسجيل الخروج؟',
+          style: TextStyle(
+            color: _textColor(context),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('إلغاء', style: TextStyle(color: _textSecondaryColor(context))),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, EsigninScreen.screenroot);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _errorColor,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('تسجيل الخروج'),
           ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 
-Widget _buildWaterDrawerMenuItem({
-  required IconData icon,
-  required String title,
-  required VoidCallback onTap,
-  required bool isDarkMode,
-  bool isLogout = false,
-}) {
-  final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-  final Color iconColor = isLogout 
-      ? Colors.red 
-      : (isDarkMode ? Colors.white70 : Colors.grey[700]!);
-
-  return Container(
-    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(8),
-      color: isLogout ? Colors.red.withOpacity(0.1) : Colors.transparent,
-    ),
-    child: ListTile(
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: isLogout 
-              ? Colors.red.withOpacity(0.2)
-              : (isDarkMode ? Colors.white12 : Colors.grey[100]),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          color: iconColor,
-          size: 20,
-        ),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isLogout ? Colors.red : textColor,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      trailing: Icon(
-        Icons.arrow_left_rounded,
-        color: isLogout ? Colors.red : (isDarkMode ? Colors.white54 : Colors.grey[500]),
-        size: 24,
-      ),
-      onTap: onTap,
-      contentPadding: EdgeInsets.symmetric(horizontal: 8),
-    ),
-  );
-}
-
-void _showLogoutConfirmation(BuildContext context, bool isDarkMode) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: _cardColor(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          Icon(Icons.logout_rounded, color: _errorColor),
-          SizedBox(width: 8),
-          Text('تأكيد تسجيل الخروج'),
-        ],
-      ),
-      content: Text(
-        'هل أنت متأكد من أنك تريد تسجيل الخروج؟',
-        style: TextStyle(
-          color: _textColor(context),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('إلغاء', style: TextStyle(color: _textSecondaryColor(context))),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            Navigator.pushReplacementNamed(context, EsigninScreen.screenroot);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _errorColor,
-            foregroundColor: Colors.white,
-          ),
-          child: Text('تسجيل الخروج'),
-        ),
-      ],
-    ),
-  );
-}
-
- // دوال العرض التفصيلي
+  // دوال العرض التفصيلي
   void _showSubscriberDetails(Map<String, dynamic> subscriber, bool isDarkMode) {
-  List<Map<String, dynamic>> subscriberBills = waterBills.where((bill) => bill['subscriberId'] == subscriber['id']).toList();
-  
-  List<Map<String, dynamic>> paidBills = subscriberBills.where((bill) => bill['status'] == 'paid').toList();
-  List<Map<String, dynamic>> unpaidBills = subscriberBills.where((bill) => bill['status'] == 'unpaid').toList();
-  List<Map<String, dynamic>> completedBills = subscriberBills.where((bill) => bill['status'] == 'paid').toList();
-  List<Map<String, dynamic>> earlyPaymentBills = subscriberBills.where((bill) => bill['status'] == 'paid' && bill['paidDate'] != null && bill['paidDate'].isBefore(bill['dueDate'])).toList();
-  List<Map<String, dynamic>> onTimePaymentBills = subscriberBills.where((bill) => bill['status'] == 'paid' && bill['paidDate'] != null && _isSameDay(bill['paidDate'], bill['dueDate'])).toList();
-  List<Map<String, dynamic>> latePaymentBills = subscriberBills.where((bill) => bill['status'] == 'overdue').toList();
+    List<Map<String, dynamic>> subscriberBills = waterBills.where((bill) => bill['subscriberId'] == subscriber['id']).toList();
+    
+    List<Map<String, dynamic>> paidBills = subscriberBills.where((bill) => bill['status'] == 'paid').toList();
+    List<Map<String, dynamic>> unpaidBills = subscriberBills.where((bill) => bill['status'] == 'unpaid').toList();
+    List<Map<String, dynamic>> completedBills = subscriberBills.where((bill) => bill['status'] == 'paid').toList();
+    List<Map<String, dynamic>> earlyPaymentBills = subscriberBills.where((bill) => bill['status'] == 'paid' && bill['paidDate'] != null && bill['paidDate'].isBefore(bill['dueDate'])).toList();
+    List<Map<String, dynamic>> onTimePaymentBills = subscriberBills.where((bill) => bill['status'] == 'paid' && bill['paidDate'] != null && _isSameDay(bill['paidDate'], bill['dueDate'])).toList();
+    List<Map<String, dynamic>> latePaymentBills = subscriberBills.where((bill) => bill['status'] == 'overdue').toList();
 
-  List<Map<String, dynamic>> subscriberServices = [
-    {
-      'id': 'WSRV-001',
-      'name': 'تركيب عداد مياه ذكي',
-      'purchaseDate': DateTime.now().subtract(Duration(days: 30)),
-      'amount': 100000.0,
-      'status': 'مكتمل',
-      'paymentMethod': 'الدفع الإلكتروني',
-      'paymentDate': DateTime.now().subtract(Duration(days: 30)),
-    },
-    {
-      'id': 'WSRV-002', 
-      'name': 'صيانة شبكة المياه',
-      'purchaseDate': DateTime.now().subtract(Duration(days: 15)),
-      'amount': 50000.0,
-      'status': 'مكتمل',
-      'paymentMethod': 'التحويل البنكي',
-      'paymentDate': DateTime.now().subtract(Duration(days: 15)),
-    }
-  ];
+    List<Map<String, dynamic>> subscriberServices = [
+      {
+        'id': 'WSRV-001',
+        'name': 'تركيب عداد مياه ذكي',
+        'purchaseDate': DateTime.now().subtract(Duration(days: 30)),
+        'amount': 100000.0,
+        'status': 'مكتمل',
+        'paymentMethod': 'الدفع الإلكتروني',
+        'paymentDate': DateTime.now().subtract(Duration(days: 30)),
+      },
+      {
+        'id': 'WSRV-002', 
+        'name': 'صيانة شبكة المياه',
+        'purchaseDate': DateTime.now().subtract(Duration(days: 15)),
+        'amount': 50000.0,
+        'status': 'مكتمل',
+        'paymentMethod': 'التحويل البنكي',
+        'paymentDate': DateTime.now().subtract(Duration(days: 15)),
+      }
+    ];
 
-  paidBills = paidBills.map((bill) {
-    return {
-      ...bill,
-      'paidDate': bill['dueDate']?.subtract(Duration(days: 2)) ?? DateTime.now().subtract(Duration(days: 2)),
-      'paymentMethod': 'الدفع الإلكتروني'
-    };
-  }).toList();
+    paidBills = paidBills.map((bill) {
+      return {
+        ...bill,
+        'paidDate': bill['dueDate']?.subtract(Duration(days: 2)) ?? DateTime.now().subtract(Duration(days: 2)),
+        'paymentMethod': 'الدفع الإلكتروني'
+      };
+    }).toList();
 
-  showDialog(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: EdgeInsets.all(0),
-          child: Container(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
-            child: Column(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _primaryColor,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.zero,
+            child: Container(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              child: Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _primaryColor,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'تفاصيل المشترك - ${subscriber['name']}',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
+                  
+                  Container(
+                    height: 50,
+                    color: _cardColor(context),
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        _buildWaterTabButton('المعلومات', 0, setState, isDarkMode),
+                        _buildWaterTabButton('المدفوعة', 1, setState, isDarkMode),
+                        _buildWaterTabButton('غير المدفوعة', 2, setState, isDarkMode),
+                        _buildWaterTabButton('المكتملة', 3, setState, isDarkMode),
+                        _buildWaterTabButton('الدفع المبكر', 4, setState, isDarkMode),
+                        _buildWaterTabButton('الدفع بالموعد', 5, setState, isDarkMode),
+                        _buildWaterTabButton('المتأخرة', 6, setState, isDarkMode),
+                        _buildWaterTabButton('الخدمات', 7, setState, isDarkMode),
+                      ],
+                    ),
+                  ),
+                  
+                  Expanded(
+                    child: Container(
+                      color: _backgroundColor(context),
+                      child: _buildWaterTabContent(_currentCitizenTab, subscriber, subscriberBills, paidBills, unpaidBills, completedBills, earlyPaymentBills, onTimePaymentBills, latePaymentBills, subscriberServices, isDarkMode, setState),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildWaterTabButton(String title, int tabIndex, StateSetter setState, bool isDarkMode) {
+    bool isSelected = _currentCitizenTab == tabIndex;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentCitizenTab = tabIndex;
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? _primaryColor : Colors.transparent,
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? _secondaryColor : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? Colors.white : _textColor(context),
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWaterTabContent(
+    int tabIndex, 
+    Map<String, dynamic> subscriber, 
+    List<Map<String, dynamic>> allBills,
+    List<Map<String, dynamic>> paidBills,
+    List<Map<String, dynamic>> unpaidBills,
+    List<Map<String, dynamic>> completedBills,
+    List<Map<String, dynamic>> earlyPaymentBills,
+    List<Map<String, dynamic>> onTimePaymentBills,
+    List<Map<String, dynamic>> latePaymentBills,
+    List<Map<String, dynamic>> services,
+    bool isDarkMode,
+    StateSetter setState,
+  ) {
+    switch (tabIndex) {
+      case 0:
+        return _buildWaterInfoTab(subscriber, isDarkMode);
+      case 1:
+        return _buildWaterBillsTab(paidBills, 'فواتير المياه المدفوعة', _successColor, isDarkMode, true);
+      case 2:
+        return _buildWaterBillsTab(unpaidBills, 'فواتير المياه غير المدفوعة', _warningColor, isDarkMode, false);
+      case 3:
+        return _buildWaterBillsTab(completedBills, 'فواتير المياه المكتملة', _successColor, isDarkMode, true);
+      case 4:
+        return _buildWaterBillsTab(earlyPaymentBills, 'الدفع المبكر للمياه', _successColor, isDarkMode, true);
+      case 5:
+        return _buildWaterBillsTab(onTimePaymentBills, 'الدفع بالموعد للمياه', _primaryColor, isDarkMode, true);
+      case 6:
+        return _buildWaterBillsTab(latePaymentBills, 'فواتير المياه المتأخرة', _errorColor, isDarkMode, false);
+      case 7:
+        return _buildWaterServicesTab(services, isDarkMode);
+      default:
+        return _buildWaterInfoTab(subscriber, isDarkMode);
+    }
+  }
+
+  Widget _buildWaterInfoTab(Map<String, dynamic> subscriber, bool isDarkMode) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'المعلومات الأساسية',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _primaryColor,
+            ),
+          ),
+          SizedBox(height: 16),
+          _buildWaterInfoRow('الاسم:', subscriber['name'], isDarkMode),
+          _buildWaterInfoRow('الرقم الوطني:', subscriber['nationalId'], isDarkMode),
+          _buildWaterInfoRow('رقم الهاتف:', subscriber['phone'], isDarkMode),
+          _buildWaterInfoRow('العنوان:', subscriber['address'], isDarkMode),
+          _buildWaterInfoRow('نوع الاشتراك:', subscriber['subscriptionType'], isDarkMode),
+          _buildWaterInfoRow('رقم عداد المياه:', subscriber['meterNumber'], isDarkMode),
+          _buildWaterInfoRow('الحالة:', 'نشط', isDarkMode),
+          _buildWaterInfoRow('تاريخ الانضمام:', DateFormat('yyyy-MM-dd').format(subscriber['joinDate']), isDarkMode),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaterBillsTab(List<Map<String, dynamic>> bills, String title, Color color, bool isDarkMode, bool isPaid) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            border: Border(bottom: BorderSide(color: color.withOpacity(0.3))),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.receipt_long_rounded, color: color),
+              SizedBox(width: 8),
+              Text(
+                '$title (${bills.length})',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        Expanded(
+          child: bills.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      IconButton(
-                        icon: Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'تفاصيل المشترك - ${subscriber['name']}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      Icon(Icons.receipt_long_outlined, size: 64, color: _textSecondaryColor(context)),
+                      SizedBox(height: 16),
+                      Text(
+                        'لا توجد فواتير',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: _textSecondaryColor(context),
                         ),
                       ),
                     ],
                   ),
+                )
+              : ListView.builder(
+                  padding: EdgeInsets.all(16),
+                  itemCount: bills.length,
+                  itemBuilder: (context, index) {
+                    return _buildWaterBillItem(bills[index], isDarkMode, isPaid, color);
+                  },
                 ),
-                
-                Container(
-                  height: 50,
-                  color: _cardColor(context),
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWaterServicesTab(List<Map<String, dynamic>> services, bool isDarkMode) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _accentColor.withOpacity(0.1),
+            border: Border(bottom: BorderSide(color: _accentColor.withOpacity(0.3))),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.build_rounded, color: _accentColor),
+              SizedBox(width: 8),
+              Text(
+                'خدمات المياه المشتراة (${services.length})',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: _accentColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        Expanded(
+          child: services.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildWaterTabButton('المعلومات', 0, setState, isDarkMode),
-                      _buildWaterTabButton('المدفوعة', 1, setState, isDarkMode),
-                      _buildWaterTabButton('غير المدفوعة', 2, setState, isDarkMode),
-                      _buildWaterTabButton('المكتملة', 3, setState, isDarkMode),
-                      _buildWaterTabButton('الدفع المبكر', 4, setState, isDarkMode),
-                      _buildWaterTabButton('الدفع بالموعد', 5, setState, isDarkMode),
-                      _buildWaterTabButton('المتأخرة', 6, setState, isDarkMode),
-                      _buildWaterTabButton('الخدمات', 7, setState, isDarkMode),
+                      Icon(Icons.build_outlined, size: 64, color: _textSecondaryColor(context)),
+                      SizedBox(height: 16),
+                      Text(
+                        'لا توجد خدمات مشتراة',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: _textSecondaryColor(context),
+                        ),
+                      ),
                     ],
                   ),
+                )
+              : ListView.builder(
+                  padding: EdgeInsets.all(16),
+                  itemCount: services.length,
+                  itemBuilder: (context, index) {
+                    return _buildWaterServiceItem(services[index], isDarkMode);
+                  },
                 ),
-                
-                Expanded(
-                  child: Container(
-                    color: _backgroundColor(context),
-                    child: _buildWaterTabContent(_currentCitizenTab, subscriber, subscriberBills, paidBills, unpaidBills, completedBills, earlyPaymentBills, onTimePaymentBills, latePaymentBills, subscriberServices, isDarkMode, setState),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWaterBillItem(Map<String, dynamic> bill, bool isDarkMode, bool isPaid, Color color) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: _cardColor(context),
+        border: Border.all(color: color.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'فاتورة مياه #${bill['id']}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: _textColor(context),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  isPaid ? 'مدفوعة' : 'غير مدفوعة',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: color,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
-    ),
-  );
-}
-
-Widget _buildWaterTabButton(String title, int tabIndex, StateSetter setState, bool isDarkMode) {
-  bool isSelected = _currentCitizenTab == tabIndex;
-  return GestureDetector(
-    onTap: () {
-      setState(() {
-        _currentCitizenTab = tabIndex;
-      });
-    },
-    child: Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isSelected ? _primaryColor : Colors.transparent,
-        border: Border(
-          bottom: BorderSide(
-            color: isSelected ? _secondaryColor : Colors.transparent,
-            width: 3,
-          ),
-        ),
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: isSelected ? Colors.white : _textColor(context),
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
-      ),
-    ),
-  );
-}
-
-Widget _buildWaterTabContent(
-  int tabIndex, 
-  Map<String, dynamic> subscriber, 
-  List<Map<String, dynamic>> allBills,
-  List<Map<String, dynamic>> paidBills,
-  List<Map<String, dynamic>> unpaidBills,
-  List<Map<String, dynamic>> completedBills,
-  List<Map<String, dynamic>> earlyPaymentBills,
-  List<Map<String, dynamic>> onTimePaymentBills,
-  List<Map<String, dynamic>> latePaymentBills,
-  List<Map<String, dynamic>> services,
-  bool isDarkMode,
-  StateSetter setState,
-) {
-  switch (tabIndex) {
-    case 0:
-      return _buildWaterInfoTab(subscriber, isDarkMode);
-    case 1:
-      return _buildWaterBillsTab(paidBills, 'فواتير المياه المدفوعة', _successColor, isDarkMode, true);
-    case 2:
-      return _buildWaterBillsTab(unpaidBills, 'فواتير المياه غير المدفوعة', _warningColor, isDarkMode, false);
-    case 3:
-      return _buildWaterBillsTab(completedBills, 'فواتير المياه المكتملة', _successColor, isDarkMode, true);
-    case 4:
-      return _buildWaterBillsTab(earlyPaymentBills, 'الدفع المبكر للمياه', _successColor, isDarkMode, true);
-    case 5:
-      return _buildWaterBillsTab(onTimePaymentBills, 'الدفع بالموعد للمياه', _primaryColor, isDarkMode, true);
-    case 6:
-      return _buildWaterBillsTab(latePaymentBills, 'فواتير المياه المتأخرة', _errorColor, isDarkMode, false);
-    case 7:
-      return _buildWaterServicesTab(services, isDarkMode);
-    default:
-      return _buildWaterInfoTab(subscriber, isDarkMode);
-  }
-}
-
-Widget _buildWaterInfoTab(Map<String, dynamic> subscriber, bool isDarkMode) {
-  return SingleChildScrollView(
-    padding: EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'المعلومات الأساسية',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: _primaryColor,
-          ),
-        ),
-        SizedBox(height: 16),
-        _buildWaterInfoRow('الاسم:', subscriber['name'], isDarkMode),
-        _buildWaterInfoRow('الرقم الوطني:', subscriber['nationalId'], isDarkMode),
-        _buildWaterInfoRow('رقم الهاتف:', subscriber['phone'], isDarkMode),
-        _buildWaterInfoRow('العنوان:', subscriber['address'], isDarkMode),
-        _buildWaterInfoRow('نوع الاشتراك:', subscriber['subscriptionType'], isDarkMode),
-        _buildWaterInfoRow('رقم عداد المياه:', subscriber['meterNumber'], isDarkMode),
-        _buildWaterInfoRow('الحالة:', 'نشط', isDarkMode),
-        _buildWaterInfoRow('تاريخ الانضمام:', DateFormat('yyyy-MM-dd').format(subscriber['joinDate']), isDarkMode),
-      ],
-    ),
-  );
-}
-
-Widget _buildWaterBillsTab(List<Map<String, dynamic>> bills, String title, Color color, bool isDarkMode, bool isPaid) {
-  return Column(
-    children: [
-      Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          border: Border(bottom: BorderSide(color: color.withOpacity(0.3))),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.receipt_long_rounded, color: color),
-            SizedBox(width: 8),
-            Text(
-              '$title (${bills.length})',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
+          SizedBox(height: 12),
+          _buildWaterBillDetailRow('الاستهلاك:', bill['consumption'], isDarkMode),
+          _buildWaterBillDetailRow('المبلغ:', _formatCurrency(bill['amountIQD']), isDarkMode),
+          _buildWaterBillDetailRow('القراءة السابقة:', bill['previousReading'], isDarkMode),
+          _buildWaterBillDetailRow('القراءة الحالية:', bill['currentReading'], isDarkMode),
+          _buildWaterBillDetailRow('تاريخ الفاتورة:', DateFormat('yyyy-MM-dd').format(bill['billingDate']), isDarkMode),
+          _buildWaterBillDetailRow('تاريخ الاستحقاق:', DateFormat('yyyy-MM-dd').format(bill['dueDate']), isDarkMode),
+          if (isPaid) ...[
+            _buildWaterBillDetailRow('طريقة الدفع:', bill['paymentMethod'] ?? 'غير محدد', isDarkMode),
+            _buildWaterBillDetailRow('تاريخ الدفع:', DateFormat('yyyy-MM-dd').format(bill['paidDate'] ?? DateTime.now()), isDarkMode),
           ],
-        ),
-      ),
-      
-      Expanded(
-        child: bills.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.receipt_long_outlined, size: 64, color: _textSecondaryColor(context)),
-                    SizedBox(height: 16),
-                    Text(
-                      'لا توجد فواتير',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _textSecondaryColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                padding: EdgeInsets.all(16),
-                itemCount: bills.length,
-                itemBuilder: (context, index) {
-                  return _buildWaterBillItem(bills[index], isDarkMode, isPaid, color);
-                },
-              ),
-      ),
-    ],
-  );
-}
-
-Widget _buildWaterServicesTab(List<Map<String, dynamic>> services, bool isDarkMode) {
-  return Column(
-    children: [
-      Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _accentColor.withOpacity(0.1),
-          border: Border(bottom: BorderSide(color: _accentColor.withOpacity(0.3))),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.build_rounded, color: _accentColor),
-            SizedBox(width: 8),
-            Text(
-              'خدمات المياه المشتراة (${services.length})',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: _accentColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-      
-      Expanded(
-        child: services.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.build_outlined, size: 64, color: _textSecondaryColor(context)),
-                    SizedBox(height: 16),
-                    Text(
-                      'لا توجد خدمات مشتراة',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _textSecondaryColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                padding: EdgeInsets.all(16),
-                itemCount: services.length,
-                itemBuilder: (context, index) {
-                  return _buildWaterServiceItem(services[index], isDarkMode);
-                },
-              ),
-      ),
-    ],
-  );
-}
-
-Widget _buildWaterBillItem(Map<String, dynamic> bill, bool isDarkMode, bool isPaid, Color color) {
-  return Container(
-    margin: EdgeInsets.only(bottom: 12),
-    padding: EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      color: _cardColor(context),
-      border: Border.all(color: color.withOpacity(0.2)),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 4,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'فاتورة مياه #${bill['id']}',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: _textColor(context),
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                isPaid ? 'مدفوعة' : 'غير مدفوعة',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 12),
-        _buildWaterBillDetailRow('الاستهلاك:', bill['consumption'], isDarkMode),
-        _buildWaterBillDetailRow('المبلغ:', _formatCurrency(bill['amountIQD']), isDarkMode),
-        _buildWaterBillDetailRow('القراءة السابقة:', bill['previousReading'], isDarkMode),
-        _buildWaterBillDetailRow('القراءة الحالية:', bill['currentReading'], isDarkMode),
-        _buildWaterBillDetailRow('تاريخ الفاتورة:', DateFormat('yyyy-MM-dd').format(bill['billingDate']), isDarkMode),
-        _buildWaterBillDetailRow('تاريخ الاستحقاق:', DateFormat('yyyy-MM-dd').format(bill['dueDate']), isDarkMode),
-        if (isPaid) ...[
-          _buildWaterBillDetailRow('طريقة الدفع:', bill['paymentMethod'] ?? 'غير محدد', isDarkMode),
-          _buildWaterBillDetailRow('تاريخ الدفع:', DateFormat('yyyy-MM-dd').format(bill['paidDate'] ?? DateTime.now()), isDarkMode),
         ],
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
-Widget _buildWaterServiceItem(Map<String, dynamic> service, bool isDarkMode) {
-  return Container(
-    margin: EdgeInsets.only(bottom: 12),
-    padding: EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      color: _cardColor(context),
-      border: Border.all(color: _accentColor.withOpacity(0.2)),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 4,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              service['name'],
+  Widget _buildWaterServiceItem(Map<String, dynamic> service, bool isDarkMode) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: _cardColor(context),
+        border: Border.all(color: _accentColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                service['name'],
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: _textColor(context),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _successColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  service['status'],
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _successColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          _buildWaterBillDetailRow('المبلغ:', _formatCurrency(service['amount']), isDarkMode),
+          _buildWaterBillDetailRow('طريقة الدفع:', service['paymentMethod'], isDarkMode),
+          _buildWaterBillDetailRow('تاريخ الشراء:', DateFormat('yyyy-MM-dd').format(service['purchaseDate']), isDarkMode),
+          _buildWaterBillDetailRow('تاريخ الدفع:', DateFormat('yyyy-MM-dd').format(service['paymentDate']), isDarkMode),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaterInfoRow(String label, String value, bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
               style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: _textSecondaryColor(context),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: _textColor(context),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaterBillDetailRow(String label, String value, bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _textSecondaryColor(context),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 12,
                 color: _textColor(context),
               ),
             ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: _successColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                service['status'],
-                style: TextStyle(
-                  fontSize: 12,
-                  color: _successColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 12),
-        _buildWaterBillDetailRow('المبلغ:', _formatCurrency(service['amount']), isDarkMode),
-        _buildWaterBillDetailRow('طريقة الدفع:', service['paymentMethod'], isDarkMode),
-        _buildWaterBillDetailRow('تاريخ الشراء:', DateFormat('yyyy-MM-dd').format(service['purchaseDate']), isDarkMode),
-        _buildWaterBillDetailRow('تاريخ الدفع:', DateFormat('yyyy-MM-dd').format(service['paymentDate']), isDarkMode),
-      ],
-    ),
-  );
-}
+          ),
+        ],
+      ),
+    );
+  }
 
-Widget _buildWaterInfoRow(String label, String value, bool isDarkMode) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: _textSecondaryColor(context),
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            style: TextStyle(
-              color: _textColor(context),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildWaterBillDetailRow(String label, String value, bool isDarkMode) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: _textSecondaryColor(context),
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              color: _textColor(context),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-bool _isSameDay(DateTime? date1, DateTime? date2) {
-  if (date1 == null || date2 == null) return false;
-  return date1.year == date2.year && date1.month == date2.month && date1.day == date2.day;
-}
+  bool _isSameDay(DateTime? date1, DateTime? date2) {
+    if (date1 == null || date2 == null) return false;
+    return date1.year == date2.year && date1.month == date2.month && date1.day == date2.day;
+  }
 
   void _showWaterBillDetails(Map<String, dynamic> bill, bool isDarkMode) {
     showDialog(
@@ -4172,101 +5172,101 @@ bool _isSameDay(DateTime? date1, DateTime? date2) {
   }
 
   void _showPaymentMethodDetails(Map<String, dynamic> method, bool isDarkMode) {
-  List<Map<String, dynamic>> methodTransfers = _getTransfersByPaymentMethod(method['id']);
-  double totalAmount = _getTotalTransfersAmount(methodTransfers);
-  List<Map<String, dynamic>> methodBankAccounts = _getBankAccountsForPaymentMethod(method['id']);
+    List<Map<String, dynamic>> methodTransfers = _getTransfersByPaymentMethod(method['id']);
+    double totalAmount = _getTotalTransfersAmount(methodTransfers);
+    List<Map<String, dynamic>> methodBankAccounts = _getBankAccountsForPaymentMethod(method['id']);
 
-  showDialog(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: EdgeInsets.zero,
-          child: Container(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
-            decoration: BoxDecoration(
-              color: _cardColor(context),
-              borderRadius: BorderRadius.circular(0),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: _primaryColor,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(0),
-                      bottomRight: Radius.circular(0),
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.zero,
+            child: Container(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              decoration: BoxDecoration(
+                color: _cardColor(context),
+                borderRadius: BorderRadius.circular(0),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: _primaryColor,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(0),
+                        bottomRight: Radius.circular(0),
+                      ),
                     ),
-                  ),
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        top: MediaQuery.of(context).padding.top + 8,
-                        right: 5,
-                        child: IconButton(
-                          icon: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 28),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                       ),
-                       Center(
-                         child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                             SizedBox(height: MediaQuery.of(context).padding.top + 2),
-                             Text(
-                               'تفاصيل ${method['name']}',
-                               style: TextStyle(
-                                 color: Colors.white,
-                                 fontSize: 22,
-                                 fontWeight: FontWeight.w700,
-                               ),
-                             ),
-                             SizedBox(height: 8),
-                             Text(
-                               '${methodTransfers.length} تحويل - ${_formatCurrency(totalAmount)}',
-                               style: TextStyle(
-                                 color: Colors.white.withOpacity(0.9),
-                                fontSize: 14,
-                               ),
-                             ),
-                           ],
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: MediaQuery.of(context).padding.top + 8,
+                          right: 5,
+                          child: IconButton(
+                            icon: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 28),
+                            onPressed: () => Navigator.pop(context),
+                          ),
                          ),
-                       ),
-                     ],
+                         Center(
+                           child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                               SizedBox(height: MediaQuery.of(context).padding.top + 2),
+                               Text(
+                                 'تفاصيل ${method['name']}',
+                                 style: TextStyle(
+                                   color: Colors.white,
+                                   fontSize: 22,
+                                   fontWeight: FontWeight.w700,
+                                 ),
+                               ),
+                               SizedBox(height: 8),
+                               Text(
+                                 '${methodTransfers.length} تحويل - ${_formatCurrency(totalAmount)}',
+                                 style: TextStyle(
+                                   color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14,
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                       ],
+                     ),
                    ),
-                 ),
- 
-                 Container(
-                   height: 50,
-                   decoration: BoxDecoration(
-                     border: Border(bottom: BorderSide(color: _borderColor(context))),
+   
+                   Container(
+                     height: 50,
+                     decoration: BoxDecoration(
+                       border: Border(bottom: BorderSide(color: _borderColor(context))),
+                     ),
+                     child: Row(
+                       children: [
+                         _buildWaterPaymentTabButton('المعلومات', 0, setState, isDarkMode),
+                         _buildWaterPaymentTabButton('الحسابات', 1, setState, isDarkMode),
+                         _buildWaterPaymentTabButton('التحويلات', 2, setState, isDarkMode),
+                         _buildWaterPaymentTabButton('الإحصائيات', 3, setState, isDarkMode),
+                       ],
+                     ),
                    ),
-                   child: Row(
-                     children: [
-                       _buildWaterPaymentTabButton('المعلومات', 0, setState, isDarkMode),
-                       _buildWaterPaymentTabButton('الحسابات', 1, setState, isDarkMode),
-                       _buildWaterPaymentTabButton('التحويلات', 2, setState, isDarkMode),
-                       _buildWaterPaymentTabButton('الإحصائيات', 3, setState, isDarkMode),
-                     ],
+   
+                   Expanded(
+                     child: _buildWaterPaymentTabContent(_currentPaymentTab, method, methodTransfers, totalAmount, methodBankAccounts, isDarkMode),
                    ),
-                 ),
- 
-                 Expanded(
-                   child: _buildWaterPaymentTabContent(_currentPaymentTab, method, methodTransfers, totalAmount, methodBankAccounts, isDarkMode),
-                 ),
-               ],
+                 ],
+               ),
              ),
-           ),
-         );
-       },
-     ),
-   );
- }
+           );
+         },
+       ),
+     );
+   }
 
- Widget _buildWaterPaymentTabButton(String title, int tabIndex, StateSetter setState, bool isDarkMode) {
+  Widget _buildWaterPaymentTabButton(String title, int tabIndex, StateSetter setState, bool isDarkMode) {
     bool isSelected = _currentPaymentTab == tabIndex;
     return Expanded(
       child: GestureDetector(
@@ -4313,7 +5313,7 @@ bool _isSameDay(DateTime? date1, DateTime? date2) {
      default:
        return _buildWaterPaymentInfoTab(method, isDarkMode);
    }
- }
+  }
 
   Widget _buildWaterPaymentInfoTab(Map<String, dynamic> method, bool isDarkMode) {
     return SingleChildScrollView(
@@ -4507,664 +5507,664 @@ bool _isSameDay(DateTime? date1, DateTime? date2) {
   }
 
   Widget _buildWaterPaymentTransfersTab(List<Map<String, dynamic>> transfers, bool isDarkMode, String methodName) {
-  return Column(
-    children: [
-      Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _primaryColor.withOpacity(0.05),
-          border: Border(bottom: BorderSide(color: _primaryColor.withOpacity(0.2))),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.filter_alt_rounded, color: _primaryColor),
-            SizedBox(width: 8),
-            Text(
-              'تحويلات $methodName',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: _primaryColor,
-              ),
-            ),
-            Spacer(),
-            Text(
-              '${transfers.length} تحويل',
-              style: TextStyle(
-                color: _textSecondaryColor(context),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-      
-      if (transfers.isNotEmpty)
+    return Column(
+      children: [
         Container(
-          padding: EdgeInsets.all(12),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _backgroundColor(context),
-            border: Border(bottom: BorderSide(color: _borderColor(context))),
+            color: _primaryColor.withOpacity(0.05),
+            border: Border(bottom: BorderSide(color: _primaryColor.withOpacity(0.2))),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildWaterTransferMiniStat('الإجمالي', transfers.length.toString(), _primaryColor),
-              _buildWaterTransferMiniStat('المبلغ', _formatCurrency(_getTotalTransfersAmount(transfers)), _successColor),
-              _buildWaterTransferMiniStat('مكتمل', '${transfers.where((t) => t['status'] == 'مكتمل').length}', _successColor),
-              _buildWaterTransferMiniStat('معلق', '${transfers.where((t) => t['status'] == 'معلق').length}', _warningColor),
+              Icon(Icons.filter_alt_rounded, color: _primaryColor),
+              SizedBox(width: 8),
+              Text(
+                'تحويلات $methodName',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: _primaryColor,
+                ),
+              ),
+              Spacer(),
+              Text(
+                '${transfers.length} تحويل',
+                style: TextStyle(
+                  color: _textSecondaryColor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),
-      
-      Expanded(
-        child: transfers.isEmpty
-            ? _buildWaterNoTransfersMessageForMethod(isDarkMode, methodName)
-            : ListView.builder(
-                padding: EdgeInsets.all(16),
-                itemCount: transfers.length,
-                itemBuilder: (context, index) {
-                  return _buildWaterTransferItem(transfers[index], isDarkMode);
-                },
-              ),
-      ),
-    ],
-  );
-}
+        
+        if (transfers.isNotEmpty)
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _backgroundColor(context),
+              border: Border(bottom: BorderSide(color: _borderColor(context))),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildWaterTransferMiniStat('الإجمالي', transfers.length.toString(), _primaryColor),
+                _buildWaterTransferMiniStat('المبلغ', _formatCurrency(_getTotalTransfersAmount(transfers)), _successColor),
+                _buildWaterTransferMiniStat('مكتمل', '${transfers.where((t) => t['status'] == 'مكتمل').length}', _successColor),
+                _buildWaterTransferMiniStat('معلق', '${transfers.where((t) => t['status'] == 'معلق').length}', _warningColor),
+              ],
+            ),
+          ),
+        
+        Expanded(
+          child: transfers.isEmpty
+              ? _buildWaterNoTransfersMessageForMethod(isDarkMode, methodName)
+              : ListView.builder(
+                  padding: EdgeInsets.all(16),
+                  itemCount: transfers.length,
+                  itemBuilder: (context, index) {
+                    return _buildWaterTransferItem(transfers[index], isDarkMode);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildWaterPaymentStatsTab(Map<String, dynamic> method, List<Map<String, dynamic>> transfers, double totalAmount, bool isDarkMode) {
-  int completedTransfers = transfers.where((t) => t['status'] == 'مكتمل').length;
-  int pendingTransfers = transfers.where((t) => t['status'] == 'معلق').length;
-  int totalTransfers = transfers.length;
-  
-  Map<String, Map<String, double>> monthlyData = {
-    '2024': {
-      'يناير': 2500000,
-      'فبراير': 3200000,
-      'مارس': 2800000,
-      'أبريل': 3200000,
-      'مايو': 3800000,
-      'يونيو': 4100000,
-      'يوليو': 3700000,
-      'أغسطس': 4300000,
-      'سبتمبر': 3900000,
-      'أكتوبر': 4500000,
-      'نوفمبر': 4100000,
-      'ديسمبر': 4800000,
-    },
-    '2023': {
-      'يناير': 2200000,
-      'فبراير': 2800000,
-      'مارس': 2500000,
-      'أبريل': 3100000,
-      'مايو': 2900000,
-      'يونيو': 3200000,
-      'يوليو': 3000000,
-      'أغسطس': 3500000,
-      'سبتمبر': 3300000,
-      'أكتوبر': 3700000,
-      'نوفمبر': 3400000,
-      'ديسمبر': 4000000,
-    },
-    '2022': {
-      'يناير': 1800000,
-      'فبراير': 2200000,
-      'مارس': 2000000,
-      'أبريل': 2500000,
-      'مايو': 2300000,
-      'يونيو': 2600000,
-      'يوليو': 2400000,
-      'أغسطس': 2800000,
-      'سبتمبر': 2700000,
-      'أكتوبر': 3000000,
-      'نوفمبر': 2900000,
-      'ديسمبر': 3200000,
-    },
-  };
-  
-  List<String> years = monthlyData.keys.toList()..sort((a, b) => b.compareTo(a));
-  String selectedYear = years.first;
+    int completedTransfers = transfers.where((t) => t['status'] == 'مكتمل').length;
+    int pendingTransfers = transfers.where((t) => t['status'] == 'معلق').length;
+    int totalTransfers = transfers.length;
+    
+    Map<String, Map<String, double>> monthlyData = {
+      '2024': {
+        'يناير': 2500000,
+        'فبراير': 3200000,
+        'مارس': 2800000,
+        'أبريل': 3200000,
+        'مايو': 3800000,
+        'يونيو': 4100000,
+        'يوليو': 3700000,
+        'أغسطس': 4300000,
+        'سبتمبر': 3900000,
+        'أكتوبر': 4500000,
+        'نوفمبر': 4100000,
+        'ديسمبر': 4800000,
+      },
+      '2023': {
+        'يناير': 2200000,
+        'فبراير': 2800000,
+        'مارس': 2500000,
+        'أبريل': 3100000,
+        'مايو': 2900000,
+        'يونيو': 3200000,
+        'يوليو': 3000000,
+        'أغسطس': 3500000,
+        'سبتمبر': 3300000,
+        'أكتوبر': 3700000,
+        'نوفمبر': 3400000,
+        'ديسمبر': 4000000,
+      },
+      '2022': {
+        'يناير': 1800000,
+        'فبراير': 2200000,
+        'مارس': 2000000,
+        'أبريل': 2500000,
+        'مايو': 2300000,
+        'يونيو': 2600000,
+        'يوليو': 2400000,
+        'أغسطس': 2800000,
+        'سبتمبر': 2700000,
+        'أكتوبر': 3000000,
+        'نوفمبر': 2900000,
+        'ديسمبر': 3200000,
+      },
+    };
+    
+    List<String> years = monthlyData.keys.toList()..sort((a, b) => b.compareTo(a));
+    String selectedYear = years.first;
 
-  return SingleChildScrollView(
-    padding: EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'نظرة عامة على تحويلات المياه',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: _primaryColor,
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'نظرة عامة على تحويلات المياه',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: _primaryColor,
+            ),
           ),
-        ),
-        SizedBox(height: 16),
-        
-        Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: _backgroundColor(context),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _borderColor(context)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildWaterVerticalStatCard(
-                      title: 'إجمالي التحويلات',
-                      value: totalTransfers.toString(),
-                      icon: Icons.list_alt_rounded,
-                      color: _primaryColor,
-                      iconSize: 28,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _buildWaterVerticalStatCard(
-                      title: 'المبلغ الإجمالي',
-                      value: _formatCurrency(totalAmount),
-                      icon: Icons.attach_money_rounded,
-                      color: _successColor,
-                      iconSize: 28,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildWaterVerticalStatCard(
-                      title: 'تحويلات مكتملة',
-                      value: completedTransfers.toString(),
-                      icon: Icons.check_circle_rounded,
-                      color: _successColor,
-                      iconSize: 28,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _buildWaterVerticalStatCard(
-                      title: 'تحويلات معلقة',
-                      value: pendingTransfers.toString(),
-                      icon: Icons.pending_rounded,
-                      color: _warningColor,
-                      iconSize: 28,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        
-        SizedBox(height: 24),
-        
-        StatefulBuilder(
-          builder: (context, setState) {
-            return Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: _backgroundColor(context),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _borderColor(context)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'التوزيع الشهري لتحويلات المياه',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: _primaryColor,
-                        ),
+          SizedBox(height: 16),
+          
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: _backgroundColor(context),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _borderColor(context)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildWaterVerticalStatCard(
+                        title: 'إجمالي التحويلات',
+                        value: totalTransfers.toString(),
+                        icon: Icons.list_alt_rounded,
+                        color: _primaryColor,
+                        iconSize: 28,
                       ),
-                      
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: _cardColor(context),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: _primaryColor.withOpacity(0.3)),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: _buildWaterVerticalStatCard(
+                        title: 'المبلغ الإجمالي',
+                        value: _formatCurrency(totalAmount),
+                        icon: Icons.attach_money_rounded,
+                        color: _successColor,
+                        iconSize: 28,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildWaterVerticalStatCard(
+                        title: 'تحويلات مكتملة',
+                        value: completedTransfers.toString(),
+                        icon: Icons.check_circle_rounded,
+                        color: _successColor,
+                        iconSize: 28,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: _buildWaterVerticalStatCard(
+                        title: 'تحويلات معلقة',
+                        value: pendingTransfers.toString(),
+                        icon: Icons.pending_rounded,
+                        color: _warningColor,
+                        iconSize: 28,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: 24),
+          
+          StatefulBuilder(
+            builder: (context, setState) {
+              return Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: _backgroundColor(context),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _borderColor(context)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'التوزيع الشهري لتحويلات المياه',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: _primaryColor,
+                          ),
                         ),
-                        child: DropdownButton<String>(
-                          value: selectedYear,
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              setState(() {
-                                selectedYear = newValue;
-                              });
-                            }
-                          },
-                          items: years.map<DropdownMenuItem<String>>((String year) {
-                            return DropdownMenuItem<String>(
-                              value: year,
-                              child: Text(
-                                'سنة $year',
-                                style: TextStyle(
-                                  color: _textColor(context),
-                                  fontSize: 12,
+                        
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: _cardColor(context),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: _primaryColor.withOpacity(0.3)),
+                          ),
+                          child: DropdownButton<String>(
+                            value: selectedYear,
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  selectedYear = newValue;
+                                });
+                              }
+                            },
+                            items: years.map<DropdownMenuItem<String>>((String year) {
+                              return DropdownMenuItem<String>(
+                                value: year,
+                                child: Text(
+                                  'سنة $year',
+                                  style: TextStyle(
+                                    color: _textColor(context),
+                                    fontSize: 12,
+                                  ),
                                 ),
+                              );
+                            }).toList(),
+                            underline: SizedBox(),
+                            icon: Icon(Icons.arrow_drop_down_rounded, color: _primaryColor, size: 20),
+                            dropdownColor: _cardColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    SizedBox(height: 16),
+                    
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _primaryColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'إجمالي السنة',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _textSecondaryColor(context),
+                                ),
+                              ),
+                              Text(
+                                _formatCurrency(_calculateWaterYearTotal(monthlyData[selectedYear]!)),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: _primaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'المعدل الشهري',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _textSecondaryColor(context),
+                                ),
+                              ),
+                              Text(
+                                _formatCurrency(_calculateWaterMonthlyAverage(monthlyData[selectedYear]!)),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: _successColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    SizedBox(height: 16),
+                    
+                    Column(
+                      children: monthlyData[selectedYear]!.entries.map((entry) {
+                        String month = entry.key;
+                        double amount = entry.value;
+                        double maxAmount = monthlyData[selectedYear]!.values.reduce((a, b) => a > b ? a : b);
+                        double percentage = (amount / maxAmount).clamp(0.0, 1.0);
+                        
+                        return _buildWaterMonthlyStatItem(
+                          month: month,
+                          year: selectedYear,
+                          amount: amount,
+                          maxAmount: maxAmount,
+                          percentage: percentage,
+                          isDarkMode: isDarkMode,
+                        );
+                      }).toList(),
+                    ),
+                    
+                    SizedBox(height: 20),
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _accentColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _accentColor.withOpacity(0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'مقارنة السنوات',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: _accentColor,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          ...years.map((year) {
+                            double yearTotal = _calculateWaterYearTotal(monthlyData[year]!);
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'سنة $year',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: _textColor(context),
+                                    ),
+                                  ),
+                                  Text(
+                                    _formatCurrency(yearTotal),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _successColor,
+                                    ),
+                                  ),
+                                ],
                               ),
                             );
                           }).toList(),
-                          underline: SizedBox(),
-                          icon: Icon(Icons.arrow_drop_down_rounded, color: _primaryColor, size: 20),
-                          dropdownColor: _cardColor(context),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                  
-                  SizedBox(height: 16),
-                  
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _primaryColor.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'إجمالي السنة',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: _textSecondaryColor(context),
-                              ),
-                            ),
-                            Text(
-                              _formatCurrency(_calculateWaterYearTotal(monthlyData[selectedYear]!)),
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                color: _primaryColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'المعدل الشهري',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: _textSecondaryColor(context),
-                              ),
-                            ),
-                            Text(
-                              _formatCurrency(_calculateWaterMonthlyAverage(monthlyData[selectedYear]!)),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: _successColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  SizedBox(height: 16),
-                  
-                  Column(
-                    children: monthlyData[selectedYear]!.entries.map((entry) {
-                      String month = entry.key;
-                      double amount = entry.value;
-                      double maxAmount = monthlyData[selectedYear]!.values.reduce((a, b) => a > b ? a : b);
-                      double percentage = (amount / maxAmount).clamp(0.0, 1.0);
-                      
-                      return _buildWaterMonthlyStatItem(
-                        month: month,
-                        year: selectedYear,
-                        amount: amount,
-                        maxAmount: maxAmount,
-                        percentage: percentage,
-                        isDarkMode: isDarkMode,
-                      );
-                    }).toList(),
-                  ),
-                  
-                  SizedBox(height: 20),
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _accentColor.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _accentColor.withOpacity(0.2)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'مقارنة السنوات',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: _accentColor,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        ...years.map((year) {
-                          double yearTotal = _calculateWaterYearTotal(monthlyData[year]!);
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'سنة $year',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: _textColor(context),
-                                  ),
-                                ),
-                                Text(
-                                  _formatCurrency(yearTotal),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: _successColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        
-        SizedBox(height: 16),
-        
-        Container(
-          padding: EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: _primaryColor.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _primaryColor.withOpacity(0.2)),
+                  ],
+                ),
+              );
+            },
           ),
-          child: Row(
+          
+          SizedBox(height: 16),
+          
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _primaryColor.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: _primaryColor, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'جميع الإحصائيات تعكس أداء ${method['name']} خلال جميع السنوات',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _textSecondaryColor(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _calculateWaterYearTotal(Map<String, double> monthlyData) {
+    return monthlyData.values.fold(0.0, (sum, amount) => sum + amount);
+  }
+
+  double _calculateWaterMonthlyAverage(Map<String, double> monthlyData) {
+    return _calculateWaterYearTotal(monthlyData) / monthlyData.length;
+  }
+
+  Widget _buildWaterMonthlyStatItem({
+    required String month,
+    required String year,
+    required double amount,
+    required double maxAmount,
+    required double percentage,
+    required bool isDarkMode,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.info_outline_rounded, color: _primaryColor, size: 20),
-              SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'جميع الإحصائيات تعكس أداء ${method['name']} خلال جميع السنوات',
+                  '$month $year',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _textColor(context),
+                  ),
+                ),
+              ),
+              Text(
+                _formatCurrency(amount),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: _successColor,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          
+          Container(
+            height: 8,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: _borderColor(context),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerRight,
+              widthFactor: percentage,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_primaryColor, _secondaryColor],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+          
+          SizedBox(height: 4),
+          
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${(percentage * 100).toStringAsFixed(0)}% من أعلى شهر',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _textSecondaryColor(context),
+                ),
+              ),
+              Text(
+                '${_getWaterMonthRank(month, year)} من 12 شهر',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _textSecondaryColor(context),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getWaterMonthRank(String month, String year) {
+    Map<String, int> monthOrder = {
+      'يناير': 1, 'فبراير': 2, 'مارس': 3, 'أبريل': 4,
+      'مايو': 5, 'يونيو': 6, 'يوليو': 7, 'أغسطس': 8,
+      'سبتمبر': 9, 'أكتوبر': 10, 'نوفمبر': 11, 'ديسمبر': 12,
+    };
+    
+    int rank = monthOrder[month] ?? 0;
+    return rank.toString();
+  }
+
+  Widget _buildWaterVerticalStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    double iconSize = 24,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: _cardColor(context),
+        border: Border.all(color: color.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: Icon(icon, color: color, size: iconSize),
+          ),
+          SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              color: _textSecondaryColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaterTransferItem(Map<String, dynamic> transfer, bool isDarkMode) {
+    Color statusColor = transfer['status'] == 'مكتمل' ? _successColor : _warningColor;
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: _cardColor(context),
+        border: Border.all(color: statusColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'تحويل مياه #${transfer['id']}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: _textColor(context),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  transfer['status'],
                   style: TextStyle(
                     fontSize: 12,
-                    color: _textSecondaryColor(context),
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      ],
-    ),
-  );
-}
-
-double _calculateWaterYearTotal(Map<String, double> monthlyData) {
-  return monthlyData.values.fold(0.0, (sum, amount) => sum + amount);
-}
-
-double _calculateWaterMonthlyAverage(Map<String, double> monthlyData) {
-  return _calculateWaterYearTotal(monthlyData) / monthlyData.length;
-}
-
-Widget _buildWaterMonthlyStatItem({
-  required String month,
-  required String year,
-  required double amount,
-  required double maxAmount,
-  required double percentage,
-  required bool isDarkMode,
-}) {
-  return Container(
-    margin: EdgeInsets.only(bottom: 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                '$month $year',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: _textColor(context),
-                ),
-              ),
-            ),
-            Text(
-              _formatCurrency(amount),
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: _successColor,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 8),
-        
-        Container(
-          height: 8,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: _borderColor(context),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerRight,
-            widthFactor: percentage,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [_primaryColor, _secondaryColor],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ),
-        ),
-        
-        SizedBox(height: 4),
-        
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${(percentage * 100).toStringAsFixed(0)}% من أعلى شهر',
-              style: TextStyle(
-                fontSize: 10,
-                color: _textSecondaryColor(context),
-              ),
-            ),
-            Text(
-              '${_getWaterMonthRank(month, year)} من 12 شهر',
-              style: TextStyle(
-                fontSize: 10,
-                color: _textSecondaryColor(context),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-String _getWaterMonthRank(String month, String year) {
-  Map<String, int> monthOrder = {
-    'يناير': 1, 'فبراير': 2, 'مارس': 3, 'أبريل': 4,
-    'مايو': 5, 'يونيو': 6, 'يوليو': 7, 'أغسطس': 8,
-    'سبتمبر': 9, 'أكتوبر': 10, 'نوفمبر': 11, 'ديسمبر': 12,
-  };
-  
-  int rank = monthOrder[month] ?? 0;
-  return rank.toString();
-}
-
-Widget _buildWaterVerticalStatCard({
-  required String title,
-  required String value,
-  required IconData icon,
-  required Color color,
-  double iconSize = 24,
-}) {
-  return Container(
-    padding: EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      color: _cardColor(context),
-      border: Border.all(color: color.withOpacity(0.2)),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 4,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(25),
-          ),
-          child: Icon(icon, color: color, size: iconSize),
-        ),
-        SizedBox(height: 12),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: color,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: 8),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 14,
-            color: _textSecondaryColor(context),
-            fontWeight: FontWeight.w600,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
-}
-
-  Widget _buildWaterTransferItem(Map<String, dynamic> transfer, bool isDarkMode) {
-  Color statusColor = transfer['status'] == 'مكتمل' ? _successColor : _warningColor;
-  
-  return Container(
-    margin: EdgeInsets.only(bottom: 12),
-    padding: EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      color: _cardColor(context),
-      border: Border.all(color: statusColor.withOpacity(0.2)),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 4,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'تحويل مياه #${transfer['id']}',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: _textColor(context),
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                transfer['status'],
-                style: TextStyle(
-                  fontSize: 12,
-                  color: statusColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 12),
-        _buildWaterTransferDetailRow('المشترك:', transfer['subscriberName'], isDarkMode),
-        _buildWaterTransferDetailRow('المبلغ:', _formatCurrency(transfer['amount']), isDarkMode),
-        _buildWaterTransferDetailRow('رقم المرجع:', transfer['referenceNumber'], isDarkMode),
-        _buildWaterTransferDetailRow('التاريخ:', DateFormat('yyyy-MM-dd').format(transfer['transferDate']), isDarkMode),
-        if (transfer['bankName'] != null)
-          _buildWaterTransferDetailRow('اسم البنك:', transfer['bankName'], isDarkMode),
-        if (transfer['accountNumber'] != null)
-          _buildWaterTransferDetailRow('رقم الحساب:', transfer['accountNumber'], isDarkMode),
-        if (transfer['paymentLocation'] != null)
-          _buildWaterTransferDetailRow('موقع الدفع:', transfer['paymentLocation'], isDarkMode),
-      ],
-    ),
-  );
-}
+          SizedBox(height: 12),
+          _buildWaterTransferDetailRow('المشترك:', transfer['subscriberName'], isDarkMode),
+          _buildWaterTransferDetailRow('المبلغ:', _formatCurrency(transfer['amount']), isDarkMode),
+          _buildWaterTransferDetailRow('رقم المرجع:', transfer['referenceNumber'], isDarkMode),
+          _buildWaterTransferDetailRow('التاريخ:', DateFormat('yyyy-MM-dd').format(transfer['transferDate']), isDarkMode),
+          if (transfer['bankName'] != null)
+            _buildWaterTransferDetailRow('اسم البنك:', transfer['bankName'], isDarkMode),
+          if (transfer['accountNumber'] != null)
+            _buildWaterTransferDetailRow('رقم الحساب:', transfer['accountNumber'], isDarkMode),
+          if (transfer['paymentLocation'] != null)
+            _buildWaterTransferDetailRow('موقع الدفع:', transfer['paymentLocation'], isDarkMode),
+        ],
+      ),
+    );
+  }
 
   // دوال مساعدة
   Widget _buildWaterTransferStat(String title, String value, Color color) {
@@ -5251,48 +6251,48 @@ Widget _buildWaterVerticalStatCard({
     );
   }
 
-Widget _buildWaterStatItem(String title, String value, IconData icon, Color color, bool isDarkMode) {
-  return Container(
-    padding: EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      color: _cardColor(context),
-      border: Border.all(color: color.withOpacity(0.2)),
-    ),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
+  Widget _buildWaterStatItem(String title, String value, IconData icon, Color color, bool isDarkMode) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: _cardColor(context),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: color,
+          SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
           ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 12,
-            color: _textSecondaryColor(context),
+          SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: _textSecondaryColor(context),
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _buildWaterMonthStat(String month, double amount, bool isDarkMode) {
     return Padding(
@@ -5368,34 +6368,34 @@ Widget _buildWaterStatItem(String title, String value, IconData icon, Color colo
   }
 
   Widget _buildWaterNoTransfersMessageForMethod(bool isDarkMode, String methodName) {
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.payment_rounded, 
-             size: 64, 
-             color: _textSecondaryColor(context)),
-        SizedBox(height: 16),
-        Text(
-          'لا توجد تحويلات',
-          style: TextStyle(
-            fontSize: 18,
-            color: _textSecondaryColor(context),
-            fontWeight: FontWeight.w600,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.payment_rounded, 
+               size: 64, 
+               color: _textSecondaryColor(context)),
+          SizedBox(height: 16),
+          Text(
+            'لا توجد تحويلات',
+            style: TextStyle(
+              fontSize: 18,
+              color: _textSecondaryColor(context),
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          'لم يتم العثور على أي تحويلات لطريقة الدفع\n$methodName',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: _textSecondaryColor(context),
+          SizedBox(height: 8),
+          Text(
+            'لم يتم العثور على أي تحويلات لطريقة الدفع\n$methodName',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _textSecondaryColor(context),
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   void _downloadReport(Map<String, dynamic> report) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -5407,70 +6407,50 @@ Widget _buildWaterStatItem(String title, String value, IconData icon, Color colo
   }
   
   // شاشة الإعدادات
-void _showSettingsScreen(BuildContext context, bool isDarkMode) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => SettingsScreen(
-        primaryColor: _primaryColor,
-        secondaryColor: _secondaryColor,
-        accentColor: _accentColor,
-        darkCardColor: Color(0xFF1E1E1E),
-        cardColor: Colors.white,
-        darkTextColor: Colors.white,
-        textColor: Color(0xFF212121),
-        darkTextSecondaryColor: Colors.white70,
-        textSecondaryColor: Color(0xFF757575),
-        onSettingsChanged: (settings) {
-          print('الإعدادات المحدثة: $settings');
-        },
+  void _showSettingsScreen(BuildContext context, bool isDarkMode) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SettingsScreen(
+          primaryColor: _primaryColor,
+          secondaryColor: _secondaryColor,
+          accentColor: _accentColor,
+          darkCardColor: Color(0xFF1E1E1E),
+          cardColor: Colors.white,
+          darkTextColor: Colors.white,
+          textColor: Color(0xFF212121),
+          darkTextSecondaryColor: Colors.white70,
+          textSecondaryColor: Color(0xFF757575),
+          onSettingsChanged: (settings) {
+            print('الإعدادات المحدثة: $settings');
+          },
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-// شاشة المساعدة والدعم
-void _showHelpSupportScreen(BuildContext context, bool isDarkMode) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => HelpSupportScreen(
-        isDarkMode: isDarkMode,
-        primaryColor: _primaryColor,
-        secondaryColor: _secondaryColor,
-        accentColor: _accentColor,
-        darkCardColor: Color(0xFF1E1E1E),
-        cardColor: Colors.white,
-        darkTextColor: Colors.white,
-        textColor: Color(0xFF212121),
-        darkTextSecondaryColor: Colors.white70,
-        textSecondaryColor: Color(0xFF757575),
+  // دوال الرسائل
+  void _showSuccessSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: _successColor,
+        duration: const Duration(seconds: 3),
       ),
-    ),
-  );
+    );
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: _errorColor,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
 }
 
-// ⬅️ دوال الرسائل
-void _showSuccessSnackbar(String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: _successColor,
-      duration: const Duration(seconds: 3),
-    ),
-  );
-}
-
-void _showErrorSnackbar(String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: _errorColor,
-      duration: const Duration(seconds: 4),
-    ),
-  );
-}
-}
 // إضافة إلى نفس الملف أو ملف منفصل
 class SettingsScreen extends StatefulWidget {
   final Color primaryColor;
@@ -5981,6 +6961,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
+
 class NotificationsScreen extends StatefulWidget {
   static const String routeName = '/notifications';
 
@@ -6271,766 +7252,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             style: TextStyle(
               color: _textSecondaryColor,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-class HelpSupportScreen extends StatelessWidget {
-  final bool isDarkMode;
-  final Color primaryColor;
-  final Color secondaryColor;
-  final Color accentColor;
-  final Color darkCardColor;
-  final Color cardColor;
-  final Color darkTextColor;
-  final Color textColor;
-  final Color darkTextSecondaryColor;
-  final Color textSecondaryColor;
-
-  const HelpSupportScreen({
-    Key? key,
-    required this.isDarkMode,
-    required this.primaryColor,
-    required this.secondaryColor,
-    required this.accentColor,
-    required this.darkCardColor,
-    required this.cardColor,
-    required this.darkTextColor,
-    required this.textColor,
-    required this.darkTextSecondaryColor,
-    required this.textSecondaryColor,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'المساعدة والدعم',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: isDarkMode
-              ? LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF121212), Color(0xFF1A1A1A)],
-                )
-              : LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFFF5F5F5), Color(0xFFE3F2FD)],
-                ),
-        ),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildContactCard(context),
-
-              SizedBox(height: 24),
-
-              _buildSectionTitle('الأسئلة الشائعة'),
-              ..._buildFAQItems(),
-
-              SizedBox(height: 24),
-              _buildSectionTitle('معلومات التطبيق'),
-              _buildAppInfoCard(),
-
-              SizedBox(height: 32),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
- Widget _buildContactCard(BuildContext context) {
-  return Container(
-    padding: EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(16),
-      color: isDarkMode ? darkCardColor : cardColor,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 8,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.support_agent_rounded, color: primaryColor, size: 28),
-            ),
-            SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                'مركز الدعم الفني للمياه',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: isDarkMode ? darkTextColor : textColor,
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 20),
-        _buildContactItem(Icons.phone_rounded, 'رقم الدعم الفني', '07701234567', true, context),
-        _buildContactItem(Icons.phone_rounded, 'رقم الطوارئ', '07809876543', true, context),
-        _buildContactItem(Icons.email_rounded, 'البريد الإلكتروني', 'support@water.gov.iq', false, context),
-        _buildContactItem(Icons.access_time_rounded, 'ساعات العمل', '8:00 ص - 4:00 م', false, context),
-        _buildContactItem(Icons.location_on_rounded, 'العنوان', 'بغداد - وزارة الموارد المائية', false, context),
-        SizedBox(height: 16),
-        
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _makePhoneCall('07701234567', context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                ),
-                icon: Icon(Icons.phone_rounded, size: 20),
-                label: Text('اتصال فوري'),
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _openSupportChat(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: secondaryColor,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                ),
-                icon: Icon(Icons.chat_rounded, size: 20),
-                label: Text('مراسلة الدعم'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
- }
-
- void _openSupportChat(BuildContext context) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => SupportChatScreen(
-        isDarkMode: isDarkMode,
-        primaryColor: primaryColor,
-        secondaryColor: secondaryColor,
-        accentColor: accentColor,
-        darkCardColor: darkCardColor,
-        cardColor: cardColor,
-        darkTextColor: darkTextColor,
-        textColor: textColor,
-        darkTextSecondaryColor: darkTextSecondaryColor,
-        textSecondaryColor: textSecondaryColor,
-      ),
-    ),
-  );
- }
-
-  Widget _buildContactItem(IconData icon, String title, String value, bool isPhone, BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, color: primaryColor, size: 20),
-          SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? darkTextColor : textColor,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: GestureDetector(
-              onTap: isPhone ? () => _makePhoneCall(value, context) : null,
-              child: Text(
-                value,
-                style: TextStyle(
-                  color: isPhone ? primaryColor : (isDarkMode ? darkTextSecondaryColor : textSecondaryColor),
-                  decoration: isPhone ? TextDecoration.underline : TextDecoration.none,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: isDarkMode ? darkTextColor : textColor,
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildFAQItems() {
-    List<Map<String, String>> faqs = [
-      {
-        'question': 'كيف يمكنني إضافة فاتورة مياه جديدة؟',
-        'answer': 'اذهب إلى قسم فواتير المياه → انقر على زر "إضافة فاتورة" → املأ البيانات المطلوبة (اسم المشترك، المبلغ، الاستهلاك) → اضغط على زر "حفظ"'
-      },
-      {
-        'question': 'كيف أعرض تقرير إيرادات المياه الشهري؟',
-        'answer': 'انتقل إلى قسم التقارير → اختر "تقرير الإيرادات" → حدد الفترة الزمنية المطلوبة → انقر على "عرض التقرير"'
-      },
-      {
-        'question': 'كيف أعدل بيانات مشترك مسجل؟',
-        'answer': 'اذهب إلى قسم المشتركين → انقر على المشترك المطلوب → اختر "تعديل البيانات" → قم بالتعديلات المطلوبة → اضغط على "حفظ التغييرات"'
-      },
-      {
-        'question': 'كيف أتحقق من حالة الدفع لفواتير المياه؟',
-        'answer': 'انتقل إلى قسم فواتير المياه → استخدم فلتر الحالة → اختر "مدفوعة" أو "غير مدفوعة" أو "متأخرة" → سيتم عرض الفواتير حسب الحالة المختارة'
-      },
-      {
-        'question': 'كيف أقوم بعمل نسخة احتياطية لبيانات فواتير المياه؟',
-        'answer': 'اذهب إلى الإعدادات → اختر "التخزين والبيانات" → انقر على "إنشاء نسخة احتياطية" → اختر موقع الحفظ → اضغط على "تأكيد"'
-      },
-    ];
-
-    return faqs.map((faq) {
-      return _buildExpandableItem(faq['question']!, faq['answer']!);
-    }).toList();
-  }
-  
-  Widget _buildExpandableItem(String question, String answer) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: isDarkMode ? darkCardColor : cardColor,
-      ),
-      child: ExpansionTile(
-        leading: Icon(Icons.help_outline_rounded, color: primaryColor),
-        title: Text(
-          question,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: isDarkMode ? darkTextColor : textColor,
-          ),
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              answer,
-              style: TextStyle(
-                color: isDarkMode ? darkTextSecondaryColor : textSecondaryColor,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }  
-  
-  Widget _buildAppInfoCard() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: isDarkMode ? darkCardColor : cardColor,
-      ),
-      child: Column(
-        children: [
-          _buildInfoRow('الإصدار', '1.0.0'),
-          _buildInfoRow('تاريخ البناء', '2024-03-20'),
-          _buildInfoRow('المطور', 'وزارة الموارد المائية'),
-          _buildInfoRow('رقم الترخيص', 'MWR-2024-001'),
-          _buildInfoRow('آخر تحديث', '2024-03-15'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: isDarkMode ? darkTextColor : textColor,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              color: isDarkMode ? darkTextSecondaryColor : textSecondaryColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _makePhoneCall(String phoneNumber, BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('جاري الاتصال بـ $phoneNumber'),
-        backgroundColor: primaryColor,
-        duration: Duration(seconds: 2),
-      ),
-    );
-    launch('tel:$phoneNumber');
-  }
-}
-class SupportChatScreen extends StatefulWidget {
-  final bool isDarkMode;
-  final Color primaryColor;
-  final Color secondaryColor;
-  final Color accentColor;
-  final Color darkCardColor;
-  final Color cardColor;
-  final Color darkTextColor;
-  final Color textColor;
-  final Color darkTextSecondaryColor;
-  final Color textSecondaryColor;
-
-  const SupportChatScreen({
-    Key? key,
-    required this.isDarkMode,
-    required this.primaryColor,
-    required this.secondaryColor,
-    required this.accentColor,
-    required this.darkCardColor,
-    required this.cardColor,
-    required this.darkTextColor,
-    required this.textColor,
-    required this.darkTextSecondaryColor,
-    required this.textSecondaryColor,
-  }) : super(key: key);
-
-  @override
-  _SupportChatScreenState createState() => _SupportChatScreenState();
-}
-
-class _SupportChatScreenState extends State<SupportChatScreen> {
-  final TextEditingController _messageController = TextEditingController();
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'text': 'مرحباً! أنا موظف دعم فواتير المياه، كيف يمكنني مساعدتك اليوم؟',
-      'isUser': false,
-      'time': 'الآن',
-      'sender': 'موظف الدعم'
-    }
-  ];
-
-  void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
-
-    setState(() {
-      _messages.add({
-        'text': _messageController.text,
-        'isUser': true,
-        'time': 'الآن',
-        'sender': 'أنت'
-      });
-    });
-
-    _messageController.clear();
-
-    Future.delayed(Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _messages.add({
-            'text': 'شكراً لتواصلكم مع دعم فواتير المياه. سأقوم بمساعدتك في حل هذه المشكلة. هل يمكنك تقديم مزيد من التفاصيل؟',
-            'isUser': false,
-            'time': 'الآن',
-            'sender': 'موظف الدعم'
-          });
-        });
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'محادثة الدعم الفني للمياه',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: Colors.white,
-              ),
-            ),
-            Text(
-              'متصل الآن',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white70,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: widget.primaryColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert_rounded, color: Colors.white),
-            onSelected: (value) {
-              if (value == 'end_chat') {
-                _endChat(context);
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem<String>(
-                value: 'end_chat',
-                child: Row(
-                  children: [
-                    Icon(Icons.close_rounded, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('إنهاء المحادثة'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: widget.primaryColor.withOpacity(0.05),
-              border: Border(
-                bottom: BorderSide(color: widget.primaryColor.withOpacity(0.1)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: widget.primaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.support_agent_rounded, color: Colors.white, size: 20),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'علي حسن - موظف دعم المياه',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: widget.isDarkMode ? widget.darkTextColor : widget.textColor,
-                        ),
-                      ),
-                      Text(
-                        'متخصص في نظام فواتير المياه والمحاسبة',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: widget.isDarkMode ? widget.darkTextSecondaryColor : widget.textSecondaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'متصل',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(16),
-              reverse: false,
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return _buildMessageBubble(message);
-              },
-            ),
-          ),
-
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: widget.isDarkMode ? widget.darkCardColor : widget.cardColor,
-              border: Border(
-                top: BorderSide(color: widget.primaryColor.withOpacity(0.1)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: widget.isDarkMode ? Colors.white10 : Colors.grey[50],
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(
-                        hintText: 'اكتب رسالتك هنا...',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        suffixIcon: IconButton(
-                          icon: Icon(Icons.attach_file_rounded, color: widget.primaryColor),
-                          onPressed: () => _showAttachmentOptions(context),
-                        ),
-                      ),
-                      maxLines: null,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                CircleAvatar(
-                  backgroundColor: widget.primaryColor,
-                  child: IconButton(
-                    icon: Icon(Icons.send_rounded, color: Colors.white),
-                    onPressed: _sendMessage,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageBubble(Map<String, dynamic> message) {
-    final bool isUser = message['isUser'] as bool;
-    
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isUser)
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: widget.primaryColor,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.support_agent_rounded, color: Colors.white, size: 16),
-            ),
-          SizedBox(width: 8),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                if (!isUser)
-                  Text(
-                    message['sender'],
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: widget.isDarkMode ? widget.darkTextSecondaryColor : widget.textSecondaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isUser 
-                        ? widget.primaryColor 
-                        : (widget.isDarkMode ? Colors.white10 : Colors.grey[100]),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    message['text'],
-                    style: TextStyle(
-                      color: isUser ? Colors.white : (widget.isDarkMode ? widget.darkTextColor : widget.textColor),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  message['time'],
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: widget.isDarkMode ? widget.darkTextSecondaryColor : widget.textSecondaryColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isUser)
-            SizedBox(width: 8),
-          if (isUser)
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: widget.secondaryColor,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.person_rounded, color: Colors.white, size: 16),
-            ),
-        ],
-      ),
-    );
-  }
-
-  void _showAttachmentOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: widget.isDarkMode ? widget.darkCardColor : widget.cardColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'إرفاق ملف',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: widget.isDarkMode ? widget.darkTextColor : widget.textColor,
-              ),
-            ),
-            SizedBox(height: 16),
-            _buildAttachmentOption(Icons.photo_rounded, 'صورة', () {}),
-            _buildAttachmentOption(Icons.description_rounded, 'ملف', () {}),
-            _buildAttachmentOption(Icons.receipt_rounded, 'فاتورة مياه', () {}),
-            _buildAttachmentOption(Icons.location_on_rounded, 'موقع', () {}),
-            SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('إلغاء'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAttachmentOption(IconData icon, String text, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: widget.primaryColor),
-      title: Text(text),
-      onTap: onTap,
-    );
-  }
-
-  void _endChat(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: widget.isDarkMode ? widget.darkCardColor : widget.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.close_rounded, color: Colors.red),
-            SizedBox(width: 8),
-            Text('إنهاء المحادثة'),
-          ],
-        ),
-        content: Text(
-          'هل أنت متأكد من أنك تريد إنهاء المحادثة؟',
-          style: TextStyle(
-            color: widget.isDarkMode ? widget.darkTextColor : widget.textColor,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('البقاء في المحادثة'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('تم إنهاء المحادثة بنجاح'),
-                  backgroundColor: widget.primaryColor,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: Text('إنهاء المحادثة'),
           ),
         ],
       ),
