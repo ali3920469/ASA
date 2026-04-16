@@ -10,7 +10,7 @@ import 'package:mang_mu/providers/theme_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:mang_mu/screens/employee/Shared Services/esignin_screen.dart';
-
+import 'package:mang_mu/screens/citizen/Shared Services Citizen/supabase_service.dart';
 class ReportingOfficerElectricityScreen extends StatefulWidget {
   @override
   _ReportingOfficerElectricityScreenState createState() => _ReportingOfficerElectricityScreenState();
@@ -66,7 +66,7 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
   final List<String> _months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   
   // متغيرات التصفية والتبويبات الفرعية
-  Map<String, String> _subTabStatus = {
+  final Map<String, String> _subTabStatus = {
     'electricity': 'غير مقروءة',
     'employee': 'غير مقروءة',
     'app': 'غير مقروءة',
@@ -81,7 +81,7 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
   bool _isLoadingReports = false;
 
   // بيانات إضافية لانقطاع التيار الكهربائي
-List<ElectricityProblem> _outageProblems = [
+final List<ElectricityProblem> _outageProblems = [
   ElectricityProblem(
     customerName: 'محمد عبدالله',
     customerId: 'CUST-004',
@@ -125,7 +125,7 @@ List<ElectricityProblem> _outageProblems = [
 
 ];
 // بيانات إضافية لمشاكل الفولطية
-List<ElectricityProblem> _voltageProblems = [
+final List<ElectricityProblem> _voltageProblems = [
   ElectricityProblem(
     customerName: 'زينب محمد',
     customerId: 'CUST-007',
@@ -168,7 +168,7 @@ List<ElectricityProblem> _voltageProblems = [
   ),
 ];
 // بيانات إضافية لمشاكل العدادات
-List<ElectricityProblem> _meterProblems = [
+final List<ElectricityProblem> _meterProblems = [
   ElectricityProblem(
     customerName: 'عبدالله حميد',
     customerId: 'CUST-009',
@@ -211,7 +211,7 @@ List<ElectricityProblem> _meterProblems = [
   ),
 ];
 // بيانات إضافية لموظفي الصيانة
-List<EmployeeProblem> _maintenanceEmployeeProblems = [
+final List<EmployeeProblem> _maintenanceEmployeeProblems = [
   EmployeeProblem(
     customerName: 'سلمان خالد',
     area: 'حي الجامعة',
@@ -246,7 +246,7 @@ List<EmployeeProblem> _maintenanceEmployeeProblems = [
   ),
 ];
 // بيانات إضافية لموظفي الفواتير
-List<EmployeeProblem> _billingEmployeeProblems = [
+final List<EmployeeProblem> _billingEmployeeProblems = [
   EmployeeProblem(
     customerName: 'ماجد فوزي',
     area: 'حي الأمل',
@@ -264,7 +264,7 @@ List<EmployeeProblem> _billingEmployeeProblems = [
     employeeDepartment: 'إدارة الفواتير',
   ),
 ];
-  List<EmergencyReport> _emergencyReports = [
+  final List<EmergencyReport> _emergencyReports = [
     EmergencyReport(
       customerName: 'علي حميد',
       location: 'حي الصحة - شارع المستشفى',
@@ -336,7 +336,7 @@ List<EmployeeProblem> _billingEmployeeProblems = [
   ];
 
   // بيانات المشاكل للكهرباء
-  List<ElectricityProblem> _electricityProblems = [
+  final List<ElectricityProblem> _electricityProblems = [
     ElectricityProblem(
       customerName: 'أحمد محمد',
       customerId: 'CUST-001',
@@ -379,7 +379,7 @@ List<EmployeeProblem> _billingEmployeeProblems = [
     ),
   ];
 
-  List<EmployeeProblem> _employeeProblems = [
+  final List<EmployeeProblem> _employeeProblems = [
     EmployeeProblem(
       customerName: 'محمد أحمد',
       area: 'حي العليا',
@@ -414,7 +414,7 @@ List<EmployeeProblem> _billingEmployeeProblems = [
     ),
   ];
 
-  List<AppProblem> _appProblems = [
+  final List<AppProblem> _appProblems = [
     AppProblem(
       customerName: 'محمد أحمد',
       area: 'حي العليا',
@@ -461,62 +461,11 @@ List<EmployeeProblem> _billingEmployeeProblems = [
       deviceType: 'Android',
     ),
   ];
-
-  List<TransformerProblem> _transformerProblems = [
-    TransformerProblem(
-      customerName: 'علي سعيد',
-      location: 'حي الربيع - شارع النخيل',
-      area: 'حي الربيع',
-      transformerCode: 'TRF-045',
-      date: '2024-01-18',
-      time: '08:00 ص',
-      description: 'ضوضاء عالية من محول الكهرباء مع انبعاث رائحة احتراق.',
-      imageAsset: 'assets/transformer1.jpg',
-      status: 'لم يتم المعالجة',
-      isRead: false,
-      reportedDate: DateTime.now().subtract(Duration(hours: 4)),
-    ),
-  ];
-
-  List<SafetyHazardProblem> _safetyHazardProblems = [
-    SafetyHazardProblem(
-      customerName: 'فهد العتيبي',
-      area: 'حي العليا',
-      location: 'شارع الملك عبدالعزيز - مقابل المدرسة الثانوية',
-      date: '2024-01-20',
-      time: '09:15 ص',
-      description: 'أسلاك كهرباء مكشوفة ومتدلية تشكل خطراً على المارة.',
-      imageAsset: 'assets/safety1.jpg',
-      status: 'لم يتم المعالجة',
-      isRead: false,
-      reportedDate: DateTime.now().subtract(Duration(hours: 6)),
-    ),
-  ];
-
-  List<ConnectionProblem> _connectionProblems = [
-    ConnectionProblem(
-      customerName: 'علي أحمد',
-      area: 'حي العليا',
-      location: 'شارع الملك فهد - مقابل المسجد',
-      date: '2024-01-25',
-      time: '08:15 ص',
-      description: 'تأخر في توصيل خدمة الكهرباء للمنزل الجديد.',
-      imageAsset: 'assets/connection1.jpg',
-      problemType: 'تأخر التوصيل',
-      status: 'لم يتم المعالجة',
-      isRead: false,
-      reportedDate: DateTime.now().subtract(Duration(hours: 9)),
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
-    
-    // تعيين ألوان موحدة للتبويبات
     _tabPrimaryColor = _primaryColor;
     _tabSecondaryColor = _secondaryColor;
-    
     _mainTabController = TabController(length: 5, vsync: this);
     _electricityTabController = TabController(length: 4, vsync: this);
     _employeeTabController = TabController(length: 3, vsync: this);
@@ -534,7 +483,7 @@ List<EmployeeProblem> _billingEmployeeProblems = [
     _electricityProblems.addAll(_outageProblems);
   _electricityProblems.addAll(_voltageProblems);
   _electricityProblems.addAll(_meterProblems);
-  
+    _fetchAllReports();
   _employeeProblems.addAll(_maintenanceEmployeeProblems);
   _employeeProblems.addAll(_billingEmployeeProblems);
 
@@ -2190,15 +2139,246 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
+  List<Map<String, dynamic>> _allReportsFromDB = [];
+  bool _isLoadingDB = false; 
+  // جلب جميع البلاغات من قاعدة البيانات باستخدام SupabaseService
+Future<void> _fetchAllReports() async {
+  setState(() => _isLoadingDB = true);
+  try {
+    final reports = await SupabaseService.fetchAllReportsForOfficer();
+    setState(() {
+      _allReportsFromDB = reports;
+      _isLoadingDB = false;
+    });
+    print('✅ تم جلب ${_allReportsFromDB.length} بلاغ');
+  } catch (e) {
+    print('❌ خطأ في جلب البلاغات: $e');
+    setState(() => _isLoadingDB = false);
+  }
+}
 
+// تصفية بلاغات الكهرباء حسب الفئة
+List<Map<String, dynamic>> _getElectricityReportsByCategory(String category) {
+  return _allReportsFromDB.where((report) => 
+      report['report_type'] == 'service_problem' && 
+      report['category'] == category).toList();
+}
+
+// تصفية بلاغات الموظفين حسب النوع
+List<Map<String, dynamic>> _getEmployeeComplaintsByType(String type) {
+  return _allReportsFromDB.where((complaint) => 
+      complaint['report_type'] == 'employee_issue' && 
+      complaint['category'] == type).toList();
+}
+
+// تصفية مشاكل التطبيق حسب النوع
+List<Map<String, dynamic>> _getAppProblemsByType(String type) {
+  return _allReportsFromDB.where((problem) => 
+      problem['report_type'] == 'app_issue' && 
+      problem['category'] == type).toList();
+}
+
+// تصفية البلاغات الطارئة حسب النوع
+List<Map<String, dynamic>> _getEmergencyReportsByType(String type) {
+  return _allReportsFromDB.where((emergency) => 
+      emergency['report_type'] == 'emergency' && 
+      (emergency['category']?.contains(type) ?? false)).toList();
+}
+
+// استبدل هذه الدالة
+Future<void> _markReportAsRead(String reportId) async {
+  final success = await SupabaseService.markReportAsRead(reportId);
+  if (success) {
+    await _fetchAllReports();
+    _showSuccessSnackbar('تم تمييز البلاغ كمقروء');
+  } else {
+    _showErrorSnackbar('فشل تمييز البلاغ كمقروء');
+  }
+}
+// استبدل هذه الدالة
+Future<void> _updateReportStatus(String reportId, String status) async {
+  final success = await SupabaseService.updateReportStatus(reportId, status);
+  if (success) {
+    await _fetchAllReports();
+    _showSuccessSnackbar('تم تحديث حالة البلاغ');
+  } else {
+    _showErrorSnackbar('فشل تحديث حالة البلاغ');
+  }
+}
+// دالة تصفية البلاغات حسب حالة القراءة
+List<Map<String, dynamic>> _filterReportsByReadStatus(List<Map<String, dynamic>> reports, String tabType) {
+  bool showUnread = _subTabStatus[tabType] == 'غير مقروءة';
+  if (showUnread) {
+    return reports.where((r) => r['is_read'] == false).toList();
+  } else {
+    return reports.where((r) => r['is_read'] == true).toList();
+  }
+}
+
+String _getStatusText(String? status) {
+  switch (status) {
+    case 'pending': return 'قيد الانتظار';
+    case 'in_progress': return 'قيد المعالجة';
+    case 'resolved': return 'تم المعالجة';
+    case 'rejected': return 'مرفوض';
+    default: return status ?? 'غير معروف';
+  }
+}
+
+String _getCategoryText(String? category) {
+  switch (category) {
+    case 'power_outage': return 'انقطاع التيار الكهربائي';
+    case 'voltage_issue': return 'مشكلة في الفولطية';
+    case 'meter_issue': return 'مشكلة في العدادات';
+    case 'street_light': return 'أضواء شارع معطلة';
+    case 'technician': return 'فني صيانة';
+    case 'billing_employee': return 'موظف فواتير';
+    case 'reception_employee': return 'موظف استقبال';
+    case 'app_crash': return 'تعطل في التطبيق';
+    case 'payment_issue': return 'مشكلة في الدفع';
+    case 'ui_issue': return 'واجهة المستخدم';
+    default: return category ?? 'أخرى';
+  }
+}
+  String _getProblemCategoryText(String category) {
+    switch (category) {
+      case 'power_outage': return 'انقطاع التيار الكهربائي';
+      case 'voltage_issue': return 'مشكلة في الفولطية';
+      case 'meter_issue': return 'مشكلة في العدادات';
+      case 'street_light': return 'أضواء شارع معطلة';
+      default: return 'أخرى';
+    }
+  }
+
+  Widget _buildElectricityReportCard(Map<String, dynamic> report) {
+  final userProfile = report['user_profile'];
+  final bool isRead = report['is_read'] ?? false;
+  
+  // استخدام category مباشرة
+  String problemCategoryText = _getCategoryText(report['category']);
+  
+  String statusText = _getStatusText(report['status']);
+  Color statusColor = Colors.grey;
+  switch (report['status']) {
+    case 'pending': statusColor = Colors.orange; break;
+    case 'in_progress': statusColor = Colors.blue; break;
+    case 'resolved': statusColor = Colors.green; break;
+    case 'rejected': statusColor = Colors.red; break;
+  }
+  
+  return Card(
+    margin: EdgeInsets.only(bottom: 12),
+    child: ListTile(
+      leading: CircleAvatar(
+        child: Text(userProfile?['full_name']?.substring(0, 1) ?? '?'),
+      ),
+      title: Text(userProfile?['full_name'] ?? 'مواطن'),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(problemCategoryText),
+          Text(report['description'] ?? '', maxLines: 2),
+          Text(report['location'] ?? ''),
+          Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(DateTime.parse(report['created_at']))}'),
+        ],
+      ),
+      trailing: Container(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: statusColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(statusText, style: TextStyle(color: Colors.white, fontSize: 10)),
+      ),
+      isThreeLine: true,
+    ),
+  );
+}
+void _showElectricityReportDetails(Map<String, dynamic> report) {
+  final userProfile = report['user_profile'];
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: _tabPrimaryColor, width: 1)),
+      title: Container(
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(color: _tabPrimaryColor, borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        child: Row(children: [
+          Icon(Icons.electrical_services, color: Colors.white), 
+          SizedBox(width: 8), 
+          Text('تفاصيل البلاغ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white))
+        ]),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(color: _tabPrimaryColor.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: _tabPrimaryColor.withOpacity(0.2))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('معلومات المواطن', style: TextStyle(fontWeight: FontWeight.bold, color: _tabPrimaryColor, fontSize: 14)),
+                  SizedBox(height: 8),
+                  _buildDetailRow('الاسم:', userProfile?['full_name'] ?? 'غير معروف'),
+                  _buildDetailRow('رقم الهاتف:', userProfile?['phone'] ?? 'غير معروف'),
+                  _buildDetailRow('رقم الهوية:', userProfile?['id_number'] ?? 'غير معروف'),
+                  _buildDetailRow('العنوان:', userProfile?['location'] ?? 'غير معروف'),
+                ],
+              ),
+            ),
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[200]!)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('معلومات البلاغ', style: TextStyle(fontWeight: FontWeight.bold, color: _tabPrimaryColor, fontSize: 14)),
+                  SizedBox(height: 8),
+                  _buildDetailRow('نوع البلاغ:', report['report_type'] == 'service_problem' ? 'مشكلة كهرباء' : 
+                      (report['report_type'] == 'employee_issue' ? 'تقصير موظف' :
+                      (report['report_type'] == 'app_issue' ? 'مشكلة تطبيق' : 'بلاغ طارئ'))),
+                  _buildDetailRow('نوع المشكلة:', _getCategoryText(report['category'])),
+                  _buildDetailRow('الموقع:', report['location']),
+                  _buildDetailRow('التاريخ:', DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(report['created_at']))),
+                  _buildDetailRow('الحالة:', _getStatusText(report['status'])),
+                  SizedBox(height: 12),
+                  Text('الوصف:', style: TextStyle(fontWeight: FontWeight.bold, color: _tabPrimaryColor, fontSize: 14)),
+                  SizedBox(height: 4),
+                  Text(report['description'] ?? '', style: TextStyle(fontSize: 12, color: Colors.grey[800])),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        OutlinedButton(onPressed: () => Navigator.pop(context), child: Text('إغلاق')),
+        if (report['status'] == 'pending')
+          ElevatedButton(onPressed: () { 
+            Navigator.pop(context); 
+            _updateReportStatus(report['id'], 'in_progress'); 
+          }, style: ElevatedButton.styleFrom(backgroundColor: _infoColor), child: Text('بدء المعالجة')),
+        if (report['status'] == 'in_progress')
+          ElevatedButton(onPressed: () { 
+            Navigator.pop(context); 
+            _updateReportStatus(report['id'], 'resolved'); 
+          }, style: ElevatedButton.styleFrom(backgroundColor: _successColor), child: Text('إنهاء المعالجة')),
+      ],
+    ),
+  );
+}
   Widget _buildDrawerMenuItem({
     required IconData icon,
     required String title,
     required VoidCallback onTap,
     bool isLogout = false,
-  }) {
+ }) {
     final Color iconColor = isLogout ? Colors.red : _tabPrimaryColor;
-
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       elevation: 1,
@@ -2242,7 +2422,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,
@@ -2278,7 +2457,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   void _showSettingsScreen(BuildContext context) {
     Navigator.push(
       context,
@@ -2300,12 +2478,9 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDarkMode = themeProvider.isDarkMode;
-
+    Provider.of<ThemeProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -2315,7 +2490,7 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
             SizedBox(width: 8),
             Text('نظام الإبلاغات - الكهرباء',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               )),
@@ -2541,75 +2716,72 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
     );
   }
 
-  Widget _buildElectricityOutageContent() {
-    final filteredProblems = _electricityProblems.where((problem) => problem.problemCategory == 'انقطاع التيار الكهربائي').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'electricity');
+    Widget _buildElectricityOutageContent() {
+    final reports = _getElectricityReportsByCategory('power_outage');
+    final filteredByReadStatus = _filterReportsByReadStatus(reports, 'electricity');
     
     return _buildElectricityContentTemplate(
       title: 'بلاغات انقطاع التيار الكهربائي',
       icon: Icons.power_off,
-      problems: filteredByReadStatus,
+      reports: filteredByReadStatus,
     );
   }
 
   Widget _buildElectricityVoltageContent() {
-    final filteredProblems = _electricityProblems.where((problem) => problem.problemCategory == 'مشكلة في الفولطية').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'electricity');
+    final reports = _getElectricityReportsByCategory('voltage_issue');
+    final filteredByReadStatus = _filterReportsByReadStatus(reports, 'electricity');
     
     return _buildElectricityContentTemplate(
       title: 'بلاغات مشاكل الفولطية',
       icon: Icons.bolt,
-      problems: filteredByReadStatus,
+      reports: filteredByReadStatus,
     );
   }
 
   Widget _buildElectricityMeterContent() {
-    final filteredProblems = _electricityProblems.where((problem) => problem.problemCategory == 'مشكلة في العدادات').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'electricity');
+    final reports = _getElectricityReportsByCategory('meter_issue');
+    final filteredByReadStatus = _filterReportsByReadStatus(reports, 'electricity');
     
     return _buildElectricityContentTemplate(
       title: 'بلاغات مشاكل العدادات',
       icon: Icons.speed,
-      problems: filteredByReadStatus,
+      reports: filteredByReadStatus,
     );
   }
 
   Widget _buildElectricityOtherContent() {
-    final filteredProblems = _electricityProblems.where((problem) => problem.problemCategory == 'أخرى').toList();
-    final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'electricity');
+    final reports = _getElectricityReportsByCategory('other');
+    final filteredByReadStatus = _filterReportsByReadStatus(reports, 'electricity');
     
     return _buildElectricityContentTemplate(
       title: 'بلاغات أخرى للكهرباء',
       icon: Icons.warning,
-      problems: filteredByReadStatus,
+      reports: filteredByReadStatus,
     );
   }
 
+  // قالب عرض بلاغات الكهرباء
   Widget _buildElectricityContentTemplate({
     required String title,
     required IconData icon,
-    required List<dynamic> problems,
+    required List<Map<String, dynamic>> reports,
   }) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDarkMode = themeProvider.isDarkMode;
-    int unreadCount = problems.where((p) => !p.isRead).length;
-    int readCount = problems.where((p) => p.isRead).length;
+    int unreadCount = reports.where((r) => r['is_read'] == false).length;
+    int readCount = reports.where((r) => r['is_read'] == true).length;
     
     return Container(
       height: MediaQuery.of(context).size.height * 0.6,
       child: Column(
         children: [
-          // عنوان القسم
           Container(
             padding: EdgeInsets.all(16),
             child: Row(
               children: [
                 Container(
                   padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: _tabPrimaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  decoration: BoxDecoration(color: _tabPrimaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
                   child: Icon(icon, color: _tabPrimaryColor, size: 24),
                 ),
                 SizedBox(width: 12),
@@ -2617,107 +2789,48 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isDarkMode ? Colors.white : _tabPrimaryColor,
-                        ),
-                      ),
-                      Text(
-                        'وزارة الكهرباء - إدارة الخدمات',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDarkMode ? Colors.white70 : Colors.grey[600],
-                        ),
-                      ),
+                      Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : _tabPrimaryColor)),
+                      Text('وزارة الكهرباء - إدارة الخدمات', style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white70 : Colors.grey[600])),
                     ],
                   ),
                 ),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: _tabPrimaryColor,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${problems.length} بلاغ',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  decoration: BoxDecoration(color: _tabPrimaryColor, borderRadius: BorderRadius.circular(20)),
+                  child: Text('${reports.length} بلاغ', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
           ),
-          
-          // التبويبات الفرعية (غير مقروءة / مقروءة)
           Container(
             decoration: BoxDecoration(
               color: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
-              border: Border(
-                bottom: BorderSide(color: isDarkMode ? Colors.white24 : Colors.grey[300]!),
-              ),
+              border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : Colors.grey[300]!)),
             ),
             child: Row(
               children: [
-_buildSubTab(
-  text: 'غير مقروءة',
-  count: unreadCount,
-  tabIndex: 0,
-  currentIndex: _electricitySubTabController.index,
-  isDarkMode: isDarkMode,
-  controller: _electricitySubTabController,
-),              _buildSubTab(
-  text: 'مقروءة',
-  count: readCount,
-  tabIndex: 1,
-  currentIndex: _electricitySubTabController.index,
-  isDarkMode: isDarkMode,
-  controller: _electricitySubTabController,
-),            ],
+                _buildSubTab(text: 'غير مقروءة', count: unreadCount, tabIndex: 0, currentIndex: _electricitySubTabController.index, isDarkMode: isDarkMode, controller: _electricitySubTabController),
+                _buildSubTab(text: 'مقروءة', count: readCount, tabIndex: 1, currentIndex: _electricitySubTabController.index, isDarkMode: isDarkMode, controller: _electricitySubTabController),
+              ],
+            ),
           ),
-        ),
-        
-        SizedBox(height: 8),
-        
-        // المحتوى
-        Expanded(
-          child: problems.isEmpty
-              ? _buildEmptyContent(isDarkMode, _subTabStatus['electricity'] == 'غير مقروءة')
-              : ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: problems.length,
-                  itemBuilder: (context, index) {
-                    final problem = problems[index];
-                    return _buildGenericProblemCard(
-                      problem,
-                      _tabPrimaryColor,
-                      Icons.electrical_services,
-                      problem.customerName,
-                      problem.substation,
-                      () {
-                        _markAsRead(problem);
-                        _showProblemDetails(problem);
-                      },
-                      onShare: () => _showShareDialog(problem),
-                      showPriority: true,
-                      priority: problem.priority,
-                      isRead: problem.isRead,
-                      showCategory: true,
-                      category: problem.problemCategory,
-                    );
-                  },
-                ),
-        ),
-      ],
-    ),
-  );
+          SizedBox(height: 8),
+          Expanded(
+            child: reports.isEmpty
+                ? _buildEmptyContent(isDarkMode, _subTabStatus['electricity'] == 'غير مقروءة')
+                : ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: reports.length,
+                    itemBuilder: (context, index) {
+                      final report = reports[index];
+                      return _buildElectricityReportCard(report);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
   }
-
   Widget _buildEmployeeReportSection() {
     return RefreshIndicator(
       key: _refreshEmployeeKey,
@@ -3465,8 +3578,7 @@ _buildSubTab(
   }
 
   Widget _buildEmergencyProblemCard(EmergencyReport problem, Color color, VoidCallback onTap) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDarkMode = themeProvider.isDarkMode;
+    Provider.of<ThemeProvider>(context);
     
     return Card(
       margin: EdgeInsets.only(bottom: 12, left: 4, right: 4),
@@ -3874,9 +3986,7 @@ _buildSubTab(
     String appVersion = '',
     String deviceType = '',
   }) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDarkMode = themeProvider.isDarkMode;
-    
+    Provider.of<ThemeProvider>(context);
     Color statusColor = Colors.grey;
     if (problem.status == 'لم يتم المعالجة') {
       statusColor = _dangerColor;
@@ -3885,7 +3995,6 @@ _buildSubTab(
     } else if (problem.status == 'تم المعالجة') {
       statusColor = _successColor;
     }
-
     return Card(
       margin: EdgeInsets.only(bottom: 12, left: 4, right: 4),
       elevation: isRead ? 1 : 3,
@@ -3965,9 +4074,7 @@ _buildSubTab(
                       ),
                     ],
                   ),
-                  
                   SizedBox(height: 12),
-                  
                   if (!isRead) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -3996,8 +4103,7 @@ _buildSubTab(
                       ),
                     ),
                     SizedBox(height: 8),
-                  ],
-                  
+                  ],             
                   if (showCategory && category.isNotEmpty) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -4016,7 +4122,6 @@ _buildSubTab(
                     ),
                     SizedBox(height: 8),
                   ],
-                  
                   if (showProblemType && problem.problemType != null) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -4035,7 +4140,6 @@ _buildSubTab(
                     ),
                     SizedBox(height: 8),
                   ],
-                  
                   if (showPriority) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -4065,7 +4169,6 @@ _buildSubTab(
                     ),
                     SizedBox(height: 8),
                   ],
-                  
                   if (showEmployeeInfo && employeeName.isNotEmpty) ...[
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
