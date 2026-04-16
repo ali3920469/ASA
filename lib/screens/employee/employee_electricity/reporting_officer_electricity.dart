@@ -10,15 +10,12 @@ import 'package:mang_mu/providers/theme_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:mang_mu/screens/employee/Shared Services/esignin_screen.dart';
-
 class ReportingOfficerElectricityScreen extends StatefulWidget {
   @override
   _ReportingOfficerElectricityScreenState createState() => _ReportingOfficerElectricityScreenState();
 }
-
 class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElectricityScreen> 
     with TickerProviderStateMixin {
-  
   late TabController _mainTabController;
   late TabController _electricityTabController;
   late TabController _employeeTabController;
@@ -64,24 +61,18 @@ class _ReportingOfficerElectricityScreenState extends State<ReportingOfficerElec
   final List<String> _reportTypes = ['يومي', 'أسبوعي', 'شهري'];
   final List<String> _weeks = ['الأسبوع الأول', 'الأسبوع الثاني', 'الأسبوع الثالث', 'الأسبوع الرابع'];
   final List<String> _months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-  
-  // متغيرات التصفية والتبويبات الفرعية
   Map<String, String> _subTabStatus = {
     'electricity': 'غير مقروءة',
     'employee': 'غير مقروءة',
     'app': 'غير مقروءة',
     'emergency': 'غير مقروءة',
   };
-
-  // متغيرات حالة التحميل
   bool _isLoadingElectricity = false;
   bool _isLoadingEmployee = false;
   bool _isLoadingApp = false;
   bool _isLoadingEmergency = false;
   bool _isLoadingReports = false;
-
-  // بيانات إضافية لانقطاع التيار الكهربائي
-List<ElectricityProblem> _outageProblems = [
+  List<ElectricityProblem> _outageProblems = [
   ElectricityProblem(
     customerName: 'محمد عبدالله',
     customerId: 'CUST-004',
@@ -122,9 +113,7 @@ List<ElectricityProblem> _outageProblems = [
     meterNumber: null,
     transformerCode: null,
   ),
-
 ];
-// بيانات إضافية لمشاكل الفولطية
 List<ElectricityProblem> _voltageProblems = [
   ElectricityProblem(
     customerName: 'زينب محمد',
@@ -334,8 +323,6 @@ List<EmployeeProblem> _billingEmployeeProblems = [
       'paidBills': 180,
     },
   ];
-
-  // بيانات المشاكل للكهرباء
   List<ElectricityProblem> _electricityProblems = [
     ElectricityProblem(
       customerName: 'أحمد محمد',
@@ -378,7 +365,6 @@ List<EmployeeProblem> _billingEmployeeProblems = [
       transformerCode: null,
     ),
   ];
-
   List<EmployeeProblem> _employeeProblems = [
     EmployeeProblem(
       customerName: 'محمد أحمد',
@@ -413,7 +399,6 @@ List<EmployeeProblem> _billingEmployeeProblems = [
       employeeDepartment: 'إدارة الفواتير',
     ),
   ];
-
   List<AppProblem> _appProblems = [
     AppProblem(
       customerName: 'محمد أحمد',
@@ -461,7 +446,6 @@ List<EmployeeProblem> _billingEmployeeProblems = [
       deviceType: 'Android',
     ),
   ];
-
   List<TransformerProblem> _transformerProblems = [
     TransformerProblem(
       customerName: 'علي سعيد',
@@ -492,7 +476,6 @@ List<EmployeeProblem> _billingEmployeeProblems = [
       reportedDate: DateTime.now().subtract(Duration(hours: 6)),
     ),
   ];
-
   List<ConnectionProblem> _connectionProblems = [
     ConnectionProblem(
       customerName: 'علي أحمد',
@@ -512,11 +495,8 @@ List<EmployeeProblem> _billingEmployeeProblems = [
   @override
   void initState() {
     super.initState();
-    
-    // تعيين ألوان موحدة للتبويبات
     _tabPrimaryColor = _primaryColor;
     _tabSecondaryColor = _secondaryColor;
-    
     _mainTabController = TabController(length: 5, vsync: this);
     _electricityTabController = TabController(length: 4, vsync: this);
     _employeeTabController = TabController(length: 3, vsync: this);
@@ -537,33 +517,27 @@ List<EmployeeProblem> _billingEmployeeProblems = [
   
   _employeeProblems.addAll(_maintenanceEmployeeProblems);
   _employeeProblems.addAll(_billingEmployeeProblems);
-
-    // إضافة مستمعين للتبويبات الفرعية
-    _electricitySubTabController.addListener(() {
+  _electricitySubTabController.addListener(() {
       setState(() {
         _subTabStatus['electricity'] = _electricitySubTabController.index == 0 ? 'غير مقروءة' : 'مقروءة';
       });
     });
-    
     _employeeSubTabController.addListener(() {
       setState(() {
         _subTabStatus['employee'] = _employeeSubTabController.index == 0 ? 'غير مقروءة' : 'مقروءة';
       });
     });
-    
     _appSubTabController.addListener(() {
       setState(() {
         _subTabStatus['app'] = _appSubTabController.index == 0 ? 'غير مقروءة' : 'مقروءة';
       });
     });
-    
     _emergencySubTabController.addListener(() {
       setState(() {
         _subTabStatus['emergency'] = _emergencySubTabController.index == 0 ? 'غير مقروءة' : 'مقروءة';
       });
     });
   }
-
   @override
   void dispose() {
     _mainTabController.dispose();
@@ -579,11 +553,9 @@ List<EmployeeProblem> _billingEmployeeProblems = [
     _searchController.dispose();
     super.dispose();
   }
-
   void _filterReports() {
     final now = DateTime.now();
     _searchController.text.toLowerCase();
-    
     setState(() {      
       if (_selectedReportType == 'اليوم') {
       } else if (_selectedReportType == 'الأسبوع') {
@@ -592,84 +564,56 @@ List<EmployeeProblem> _billingEmployeeProblems = [
       }
     });
   }
-
-  // دوال التحديث لكل شاشة
   Future<void> _refreshElectricityData() async {
     setState(() {
       _isLoadingElectricity = true;
     });
-    
-    // محاكاة جلب بيانات جديدة من الخادم
     await Future.delayed(Duration(seconds: 2));
-    
-    // هنا يمكنك إضافة منطق جلب البيانات الجديدة من الـ API
-    // مثلاً: إعادة تحميل البيانات من قاعدة البيانات أو الـ API
-    
     setState(() {
       _isLoadingElectricity = false;
     });
-    
-    // عرض رسالة نجاح
     _showSuccessSnackbar('تم تحديث بيانات الكهرباء بنجاح');
   }
-
   Future<void> _refreshEmployeeData() async {
     setState(() {
       _isLoadingEmployee = true;
     });
-    
     await Future.delayed(Duration(seconds: 2));
-    
     setState(() {
       _isLoadingEmployee = false;
     });
-    
     _showSuccessSnackbar('تم تحديث بيانات الموظفين بنجاح');
   }
-
   Future<void> _refreshAppData() async {
     setState(() {
       _isLoadingApp = true;
     });
-    
     await Future.delayed(Duration(seconds: 2));
-    
     setState(() {
       _isLoadingApp = false;
     });
-    
     _showSuccessSnackbar('تم تحديث بيانات التطبيق بنجاح');
   }
-
   Future<void> _refreshEmergencyData() async {
     setState(() {
       _isLoadingEmergency = true;
     });
-    
     await Future.delayed(Duration(seconds: 2));
-    
     setState(() {
       _isLoadingEmergency = false;
     });
-    
     _showSuccessSnackbar('تم تحديث بيانات الطوارئ بنجاح');
   }
-
   Future<void> _refreshReportsData() async {
     setState(() {
       _isLoadingReports = true;
     });
-    
     await Future.delayed(Duration(seconds: 2));
-    
     setState(() {
       _isLoadingReports = false;
     });
-    
     _showSuccessSnackbar('تم تحديث التقارير بنجاح');
   }
-
-  // دالة موحدة لبناء تبويب رئيسي
   Widget _buildMainTab(String text, IconData icon, int index, bool isSelected) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -704,8 +648,6 @@ List<EmployeeProblem> _billingEmployeeProblems = [
       ),
     );
   }
-
-  // دالة موحدة لبناء تبويب فرعي
  Widget _buildSubTab({
   required String text,
   required int count,
@@ -771,10 +713,8 @@ List<EmployeeProblem> _billingEmployeeProblems = [
     ),
   );
 }
-// استبدل دالة _filterProblemsByReadStatus بهذا الكود المبسط
 List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType) {
   bool showUnread = _subTabStatus[tabType] == 'غير مقروءة';
-  
   if (showUnread) {
     return problems.where((p) {
       if (p is ElectricityProblem) return !p.isRead;
@@ -793,8 +733,7 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
     }).toList();
   }
 }
-  // دالة لتحديث حالة القراءة
-  void _markAsRead(dynamic problem) {
+void _markAsRead(dynamic problem) {
   print('=== بداية تحديث حالة البلاغ ===');
   print('نوع المشكلة: ${problem.runtimeType}');
   
@@ -813,13 +752,11 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       }
     }
   });
-  
   print('عدد البلاغات المقروءة بعد التحديث: ${_electricityProblems.where((p) => p.isRead).length}');
   print('عدد البلاغات غير المقروءة بعد التحديث: ${_electricityProblems.where((p) => !p.isRead).length}');
   print('=== نهاية تحديث حالة البلاغ ===');
 }
-  // دالة لبناء حالة فارغة موحدة
-  Widget _buildEmptyContent(bool isDarkMode, bool isUnread) {
+Widget _buildEmptyContent(bool isDarkMode, bool isUnread) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -855,17 +792,14 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Color _textColor(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     return themeProvider.isDarkMode ? Colors.white : Color(0xFF1A2E35);
   }
-  
   Color _textSecondaryColor(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     return themeProvider.isDarkMode ? Colors.white70 : Color(0xFF5A6C7D);
   }
-
   void _showMultiDatePicker() {
     showDialog(
       context: context,
@@ -912,7 +846,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
                               selectedDate.year == selectedDay.year &&
                               selectedDate.month == selectedDay.month &&
                               selectedDate.day == selectedDay.day);
-                          
                           if (isInList) {
                             _selectedDates.removeWhere((selectedDate) =>
                                 selectedDate.year == selectedDay.year &&
@@ -1010,15 +943,12 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   void _generateReport() {
     if (_selectedReportTypeSystem == 'يومي' && _selectedDates.isEmpty) {
       _showErrorSnackbar('يرجى اختيار تواريخ أولاً');
       return;
     }
-
     String reportPeriod = '';
-    
     if (_selectedReportTypeSystem == 'يومي' && _selectedDates.isNotEmpty) {
       final sortedDates = List<DateTime>.from(_selectedDates)..sort();
       if (_selectedDates.length == 1) {
@@ -1031,11 +961,9 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
     } else if (_selectedReportTypeSystem == 'شهري') {
       reportPeriod = _selectedMonth ?? 'غير محدد';
     }
-
     _showSuccessSnackbar('تم إنشاء التقرير لـ ${_selectedDates.length} يوم بنجاح');
     _showGeneratedReport(reportPeriod);
   }
-
   void _showGeneratedReport(String period) {
     showDialog(
       context: context,
@@ -1082,11 +1010,9 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Future<void> _generatePdfReport(String period) async {
     try {
       final pdf = pw.Document();
-
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
@@ -1100,19 +1026,15 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
           },
         ),
       );
-
       final Uint8List pdfBytes = await pdf.save();
       await _sharePdfFile(pdfBytes, period);
-
     } catch (e) {
       _showErrorSnackbar('خطأ في تصدير التقرير: $e');
     }
   }
-
   Future<void> _sharePdfFile(Uint8List pdfBytes, String period) async {
     try {
       final fileName = 'تقرير_الكهرباء_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      
       await Share.shareXFiles(
         [
           XFile.fromData(
@@ -1124,13 +1046,11 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
         subject: 'تقرير الكهرباء - $period',
         text: 'مرفق تقرير بلاغات الكهرباء للفترة $period',
       );
-
       _showSuccessSnackbar('تم تصدير التقرير بنجاح');
     } catch (e) {
       _showErrorSnackbar('خطأ في مشاركة الملف: $e');
     }
   }
-
   void _showSuccessSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1140,7 +1060,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1150,11 +1069,9 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Widget _buildReportsView(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDarkMode = themeProvider.isDarkMode;
-
     return RefreshIndicator(
       key: _refreshReportsKey,
       onRefresh: _refreshReportsData,
@@ -1172,7 +1089,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
                 backgroundColor: _tabPrimaryColor.withOpacity(0.1),
               ),
             SizedBox(height: 8),
-            // تبويبات داخلية (إنشاء التقارير / التقارير الواردة)
             Container(
               height: 50,
               decoration: BoxDecoration(
@@ -1192,8 +1108,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
               ),
             ),
             const SizedBox(height: 20),
-
-            // عرض المحتوى حسب التبويب المختار
             _currentReportTab == 0 
                 ? _buildCreateReportSection(isDarkMode)
                 : _buildReceivedReportsSection(isDarkMode),
@@ -1202,7 +1116,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Widget _buildReportInnerTabButton(String title, int tabIndex, bool isDarkMode) {
     bool isSelected = _currentReportTab == tabIndex;
     return GestureDetector(
@@ -1232,7 +1145,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Widget _buildCreateReportSection(bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1268,9 +1180,7 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
             ),
           ),
         ),
-        
         SizedBox(height: 20),
-        
         Card(
           elevation: 2,
           shape: RoundedRectangleBorder(
@@ -1282,9 +1192,7 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
             child: _buildReportOptions(isDarkMode),
           ),
         ),
-        
         SizedBox(height: 20),
-        
         Card(
           elevation: 4,
           shape: RoundedRectangleBorder(
@@ -1295,9 +1203,7 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ],
     );
   }
-
   Widget _buildReceivedReportsSection(bool isDarkMode) {
-    // بيانات تجريبية للتقارير الواردة
     final List<Map<String, dynamic>> receivedReports = [
       {
         'id': 'REP-ELEC-2024-001',
@@ -1333,7 +1239,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
         'area': 'جميع المناطق',
       },
     ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1353,8 +1258,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
           ),
         ),
         const SizedBox(height: 20),
-        
-        // إحصائيات سريعة
         Container(
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -1425,18 +1328,13 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
             ],
           ),
         ),
-        
         const SizedBox(height: 20),
-        
-        // قائمة التقارير
         ...receivedReports.map((report) => _buildReceivedReportCard(report, isDarkMode)),
       ],
     );
   }
-
   Widget _buildReceivedReportCard(Map<String, dynamic> report, bool isDarkMode) {
     bool isUnread = report['status'] == 'غير مقروء';
-    
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -1559,7 +1457,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   void _handleReportAction(String action, Map<String, dynamic> report) {
     switch (action) {
       case 'view':
@@ -1573,7 +1470,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
         break;
     }
   }
-
   void _viewReceivedReport(Map<String, dynamic> report) {
     showDialog(
       context: context,
@@ -1641,7 +1537,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Widget _buildReportDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1670,7 +1565,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   void _downloadReport(Map<String, dynamic> report) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1679,7 +1573,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   void _shareReport(Map<String, dynamic> report) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1688,7 +1581,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Widget _buildReportTypeFilter(bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1734,7 +1626,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ],
     );
   }
-
   Widget _buildReportOptions(bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1754,7 +1645,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ],
     );
   }
-
   Widget _buildDailyOptions() {
     return Column(
       children: [
@@ -1856,7 +1746,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ],
     );
   }
-
   Widget _buildStatItem(String value, String label, IconData icon) {
     return Column(
       children: [
@@ -1880,7 +1769,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ],
     );
   }
-
   Widget _buildWeeklyOptions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1922,7 +1810,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ],
     );
   }
-
   Widget _buildMonthlyOptions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1964,7 +1851,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ],
     );
   }
-
   Widget _buildGenerateReportButton() {
     bool isFormValid = false;
     
@@ -1979,7 +1865,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
         isFormValid = _selectedMonth != null;
         break;
     }
-
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16),
@@ -2036,7 +1921,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Widget _buildGovernmentDrawer(BuildContext context) {
     return Drawer(
       child: Container(
@@ -2106,7 +1990,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
                 ],
               ),
             ),
-
             Expanded(
               child: Container(
                 color: Color(0xFFE8F5E9),
@@ -2130,9 +2013,7 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
                       },
                       isLogout: true,
                     ),
-
                     SizedBox(height: 40),
-                    
                     Container(
                       padding: EdgeInsets.all(16),
                       child: Column(
@@ -2190,7 +2071,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Widget _buildDrawerMenuItem({
     required IconData icon,
     required String title,
@@ -2198,7 +2078,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
     bool isLogout = false,
   }) {
     final Color iconColor = isLogout ? Colors.red : _tabPrimaryColor;
-
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       elevation: 1,
@@ -2242,7 +2121,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,
@@ -2278,7 +2156,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   void _showSettingsScreen(BuildContext context) {
     Navigator.push(
       context,
@@ -2300,12 +2177,10 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDarkMode = themeProvider.isDarkMode;
-
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -2366,7 +2241,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
             ),
             onPressed: () => _showNotificationsScreen(context),
           ),
-         
         ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(70),
@@ -2427,7 +2301,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
           ),
         ),
       ),
-      
       drawer: _buildGovernmentDrawer(context),
       body: Container(
         decoration: BoxDecoration(
@@ -2460,7 +2333,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Widget _buildElectricityReportSection() {
     return RefreshIndicator(
       key: _refreshElectricityKey,
@@ -2540,7 +2412,6 @@ List<dynamic> _filterProblemsByReadStatus(List<dynamic> problems, String tabType
       ),
     );
   }
-
   Widget _buildElectricityOutageContent() {
     final filteredProblems = _electricityProblems.where((problem) => problem.problemCategory == 'انقطاع التيار الكهربائي').toList();
     final filteredByReadStatus = _filterProblemsByReadStatus(filteredProblems, 'electricity');
